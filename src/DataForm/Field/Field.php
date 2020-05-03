@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Config;
 use Zofe\Rapyd\Widget;
 use Zofe\Rapyd\Helpers\HTML;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Http\Request;
 
 abstract class Field extends Widget
 {
@@ -298,19 +298,21 @@ abstract class Field extends Widget
     {
         $name = $this->db_name;
 
-        $process = (Input::get('search') || Input::get('save')) ? true : false;
+	    $request = Request::createFromGlobals();
+
+        $process = ($request->get('search') || $request->get('save')) ? true : false;
 
         //fix, don't refill on file fields
         if (in_array($this->type, array('file','image'))) {
             $this->request_refill = false;
         }
 
-        if ($this->request_refill == true && $process && Input::exists($this->name) ) {
+        if ($this->request_refill == true && $process && $request->exists($this->name) ) {
             if ($this->multiple) {
 
                 $this->value = "";
-                if (Input::get($this->name)) {
-                    $values = Input::get($this->name);
+                if ($request->get($this->name)) {
+                    $values = $request->get($this->name);
                     if (!is_array($values)) {
                         $this->value = $values;
                     } else {
@@ -320,9 +322,9 @@ abstract class Field extends Widget
 
             } else {
                 if($this->with_xss_filter) {
-                    $this->value = HTML::xssfilter(Input::get($this->name));
+                    $this->value = HTML::xssfilter($request->get($this->name));
                 } else {
-                    $this->value = Input::get($this->name);
+                    $this->value = $request->get($this->name);
                 }
             }
             $this->is_refill = true;
@@ -380,7 +382,7 @@ abstract class Field extends Widget
                         . " but Rapyd can handle only BelongsToMany, BelongsTo, and HasOne");
                     break;
             }
-        } elseif ((isset($this->model)) && (Input::get($this->name) === null) && ($this->model->offsetExists($this->db_name))) {
+        } elseif ((isset($this->model)) && ($request->get($this->name) === null) && ($this->model->offsetExists($this->db_name))) {
 
             $this->value = $this->model->getAttribute($this->db_name);
         }
@@ -391,9 +393,11 @@ abstract class Field extends Widget
 
     public function getNewValue()
     {
-        $process = (Input::get('search') || Input::get('save')) ? true : false;
+	    $request = Request::createFromGlobals();
 
-        if ($process && Input::exists($this->name)) {
+        $process = ($request->get('search') || $request->get('save')) ? true : false;
+
+        if ($process && $request->exists($this->name)) {
             if ($this->status == "create") {
                 $this->action = "insert";
             } elseif ($this->status == "modify") {
@@ -402,8 +406,8 @@ abstract class Field extends Widget
 
             if ($this->multiple) {
                 $this->value = "";
-                if (Input::get($this->name)) {
-                    $values = Input::get($this->name);
+                if ($request->get($this->name)) {
+                    $values = $request->get($this->name);
                     if (!is_array($values)) {
                         $this->new_value = $values;
                     } else {
@@ -413,9 +417,9 @@ abstract class Field extends Widget
 
             } else {
                 if($this->with_xss_filter) {
-                    $this->new_value = HTML::xssfilter(Input::get($this->name));
+                    $this->new_value = HTML::xssfilter($request->get($this->name));
                 } else {
-                    $this->new_value = Input::get($this->name);
+                    $this->new_value = $request->get($this->name);
                 }
             }
         } elseif (($this->action == "insert") && ($this->insert_value != null)) {
