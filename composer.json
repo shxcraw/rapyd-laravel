@@ -13,7 +13,7 @@
         "php": ">=7.1",
         "laravel/framework": "^7.0",
         "intervention/image": "2.4.2",
-        "zofe/burp": "2.*"
+        "shxcraw/burp": "^7.0"
     },
     "suggest": {
         "baum/baum": "Allows to use the DataTree widget"
