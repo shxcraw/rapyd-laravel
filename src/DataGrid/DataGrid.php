@@ -293,7 +293,7 @@ class DataGrid extends DataSet
     protected function sanitize($string)
     {
         $result = nl2br(htmlspecialchars($string));
-        return Config::get('rapyd.sanitize.num_characters') > 0 ? str_limit($result, Config::get('rapyd.sanitize.num_characters')) : $result;
+        return Config::get('rapyd.sanitize.num_characters') > 0 ? \Str::limit($result, Config::get('rapyd.sanitize.num_characters')) : $result;
     }
 
 }
