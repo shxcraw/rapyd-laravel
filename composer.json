@@ -9,6 +9,12 @@
             "email": "felice.ostuni@gmail.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/shxcraw/burp"
+        }
+    ],
     "require": {
         "php": ">=7.1",
         "laravel/framework": "^7.0",
