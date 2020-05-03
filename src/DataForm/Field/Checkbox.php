@@ -1,7 +1,7 @@
 <?php namespace Zofe\Rapyd\DataForm\Field;
 
 use Collective\Html\FormFacade as Form;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Http\Request;
 
 class Checkbox extends Field
 {
@@ -18,7 +18,10 @@ class Checkbox extends Field
     public function getValue()
     {
         parent::getValue();
-        if (\Request::isMethod('post') && !\Input::exists($this->name)) {
+
+	    $request = Request::createFromGlobals();
+
+        if ($request->isMethod('post') && ! $request->exists($this->name)) {
             $this->value =  $this->unchecked_value;
         }
         $this->checked = (bool) ($this->value == $this->checked_value);

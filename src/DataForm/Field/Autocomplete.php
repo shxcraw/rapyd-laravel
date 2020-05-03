@@ -3,8 +3,7 @@
 namespace Zofe\Rapyd\DataForm\Field;
 
 use Collective\Html\FormFacade as Form;
-use Illuminate\Support\Facades\Input;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
 use MyProject\Proxies\__CG__\stdClass;
 use Zofe\Rapyd\Rapyd;
 
@@ -90,6 +89,8 @@ class Autocomplete extends Field
 
     public function remote($record_label = null, $record_id = null, $remote = null)
     {
+	    $request = Request::createFromGlobals();
+
         $this->record_label = ($record_label!="") ? $record_label : $this->db_name ;
         $this->record_id = ($record_id!="") ? $record_id : preg_replace('#([a-z0-9_-]+\.)?(.*)#i','$2',$this->rel_key);
         if ($remote!="") {
@@ -108,7 +109,7 @@ class Autocomplete extends Field
                 $this->record_label = $this->rel_field;
             }
             $hash = substr(md5(serialize($data)), 0, 12);
-            Session::put($hash, $data);
+	        $request->session()->put($hash, $data);
 
             $this->remote = route('rapyd.remote', array('hash'=> $hash));
         }
@@ -126,6 +127,8 @@ class Autocomplete extends Field
 
     public function build()
     {
+	    $request = Request::createFromGlobals();
+
         $output = "";
         Rapyd::css('autocomplete/autocomplete.css');
         Rapyd::js('autocomplete/typeahead.bundle.min.js');
@@ -157,8 +160,8 @@ class Autocomplete extends Field
             case "create":
             case "modify":
 
-                if (Input::get("auto_".$this->name)) {
-                    $autocomplete = Input::get("auto_".$this->name);
+                if ($request->get("auto_".$this->name)) {
+                    $autocomplete = $request->get("auto_".$this->name);
                 } elseif ($this->relation != null) {
                     $name = $this->rel_field;
                     $autocomplete = @$this->relation->get()->first()->$name;

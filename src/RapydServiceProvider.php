@@ -54,7 +54,7 @@ class RapydServiceProvider extends ServiceProvider
         $this->app->booting(function () {
             $loader  =  \Illuminate\Foundation\AliasLoader::getInstance();
 
-            $loader->alias('Input', 'Illuminate\Support\Facades\Input');
+            $loader->alias('Request', 'Illuminate\Http\Request');
             
             $loader->alias('Rapyd'     , 'Zofe\Rapyd\Facades\Rapyd'     );
             
