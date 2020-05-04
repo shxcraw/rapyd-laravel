@@ -3,8 +3,8 @@
 namespace Zofe\Rapyd\DataForm\Field;
 
 use Collective\Html\FormFacade as Form;
-use Illuminate\Support\Facades\Input;
 use Intervention\Image\ImageManagerStatic as ImageManager;
+use Illuminate\Http\Request;
 
 class Image extends File
 {
@@ -117,6 +117,7 @@ class Image extends File
 
     public function build()
     {
+	    $request = Request::createFromGlobals();
         $output = "";
         if (parent::build() === false)
             return;
@@ -140,7 +141,7 @@ class Image extends File
                 if ($this->old_value != "") {
                     $output .= '<div class="clearfix">';
                     $output .= $this->thumb()." &nbsp;".link_to($this->web_path.$this->value, $this->value, array('target'=>'_blank'))."<br />\n";
-                    $output .= Form::checkbox($this->name.'_remove', 1, (bool) Input::get($this->name.'_remove'))." ".trans('rapyd::rapyd.delete')." <br/>\n";
+                    $output .= Form::checkbox($this->name.'_remove', 1, (bool) $request->get($this->name.'_remove'))." ".trans('rapyd::rapyd.delete')." <br/>\n";
                     $output .= '</div>';
                 }
                 $output .= Form::file($this->name, $this->attributes);

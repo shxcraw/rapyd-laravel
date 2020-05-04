@@ -3,8 +3,8 @@
 namespace Zofe\Rapyd\DataForm\Field;
 
 use Collective\Html\FormFacade as Form;
-use Illuminate\Support\Facades\Input;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Illuminate\Http\Request;
 
 class File extends Field
 {
@@ -46,8 +46,10 @@ class File extends Field
     
     public function rule($rule)
     {
+	    $request = Request::createFromGlobals();
+
         //we should consider rules only on upload
-        if (Input::hasFile($this->name)) {
+        if ($request->hasFile($this->name)) {
             parent::rule($rule);
         }
 
@@ -71,10 +73,12 @@ class File extends Field
 
         $this->getValue();
 
+	    $request = Request::createFromGlobals();
+
         if ((($this->action == "update") || ($this->action == "insert"))) {
 
-            if (Input::hasFile($this->name)) {
-                $this->file = Input::file($this->name);
+            if ($request->hasFile($this->name)) {
+                $this->file = $request->file($this->name);
 
                 $filename = ($this->filename!='') ?  $this->filename : $this->file->getClientOriginalName();
 
@@ -124,7 +128,7 @@ class File extends Field
             } else {
 
                 //unlink
-                if (Input::get($this->name . "_remove")) {
+                if ($request->get($this->name . "_remove")) {
                     $this->path =  $this->parseString($this->path);
                     if ($this->unlink_file) {
                         @unlink(public_path().'/'.$this->path.$this->old_value);
@@ -256,6 +260,8 @@ class File extends Field
 
     public function build()
     {
+	    $request = Request::createFromGlobals();
+
         $this->path =  $this->parseString($this->path);
         $this->web_path = $this->parseString($this->web_path);
         $output = "";
@@ -282,7 +288,7 @@ class File extends Field
                 if ($this->old_value) {
                     $output .= '<div class="clearfix">';
                     $output .= link_to($this->web_path.$this->value, $this->value). "&nbsp;";
-                    $output .= Form::checkbox($this->name.'_remove', 1, (bool) Input::get($this->name.'_remove'))." ".trans('rapyd::rapyd.delete')." <br/>\n";
+                    $output .= Form::checkbox($this->name.'_remove', 1, (bool) $request->get($this->name.'_remove'))." ".trans('rapyd::rapyd.delete')." <br/>\n";
                     $output .= '</div>';
                 }
                 $output .= Form::file($this->name, $this->attributes);

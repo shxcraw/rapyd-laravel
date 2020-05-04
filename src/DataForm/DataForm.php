@@ -23,10 +23,9 @@ use Zofe\Rapyd\Widget;
 use Collective\Html\FormFacade as Form;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
 use Zofe\Rapyd\Rapyd;
+use Illuminate\Http\Request;
 
 /**
  * Class DataForm
@@ -282,6 +281,8 @@ class DataForm extends Widget
      */
     protected function isValid()
     {
+	    $request = Request::createFromGlobals();
+
         if ($this->error != "") {
             return false;
         }
@@ -297,7 +298,7 @@ class DataForm extends Widget
         }
         if (isset($rules)) {
 
-            $this->validator = Validator::make(Input::all(), $rules, $this->validator_messages, $attributes);
+            $this->validator = Validator::make($request->all(), $rules, $this->validator_messages, $attributes);
 
             return !$this->validator->fails();
         } else {
