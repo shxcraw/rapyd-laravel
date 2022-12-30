@@ -575,6 +575,7 @@ abstract class Field extends Widget
             $methodClass = get_class($this->relation);
             switch ($methodClass) {
                 case 'Illuminate\Database\Eloquent\Relations\BelongsToMany':
+                case 'Illuminate\Database\Eloquent\Relations\MorphToMany':
 
                     $old_data = $this->relation->get()->modelKeys();
                     $new_data = explode($this->serialization_sep, $data);
