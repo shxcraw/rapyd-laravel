@@ -563,16 +563,11 @@ abstract class Field extends Widget
 
     public function updateRelations()
     {
-        if (isset($this->new_value)) {
-            $data = $this->new_value;
-        } else {
-            $data = $this->value;
-        }
-        if ($this->relation != null) {
+        $data = $this->new_value;
 
-            //dd($this->relation, get_class($this->relation));
-            
+        if ($this->relation != null) {
             $methodClass = get_class($this->relation);
+            
             switch ($methodClass) {
                 case 'Illuminate\Database\Eloquent\Relations\BelongsToMany':
                 case 'Illuminate\Database\Eloquent\Relations\MorphToMany':
@@ -597,6 +592,9 @@ abstract class Field extends Widget
 
                     break;
                 case 'Illuminate\Database\Eloquent\Relations\HasOne':
+                    if (! isset($this->new_value)) {
+                        $data = $this->value;
+                    }
 
                     if (isset($this->model_relations[$this->rel_name])) {
                         $relation = $this->model_relations[$this->rel_name];
@@ -608,13 +606,9 @@ abstract class Field extends Widget
                     $relation->{$this->rel_field} = $data;
                     $this->relation->save( $relation );
                     break;
-                
+
                 case 'Illuminate\Database\Eloquent\Relations\HasOneOrMany':
-
                 case 'Illuminate\Database\Eloquent\Relations\HasMany':
-
-                    //should manage this or not?
-                    //if so, how?
                     break;
             }
         }
