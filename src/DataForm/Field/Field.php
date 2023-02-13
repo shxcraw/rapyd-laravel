@@ -346,6 +346,7 @@ abstract class Field extends Widget
             switch (true) {
                 //es. "categories" per "Article"
                 case $this->relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsToMany:
+                case $this->relation instanceof \Illuminate\Database\Eloquent\Relations\HasMany:
 
                     // some kind of field on belongsToMany works with multiple values, most of time in serialized way
                     //in this case I need to fill value using a serialized array of related collection
