@@ -17,10 +17,10 @@
     ],
     "require": {
         "php": ">=7.3",
-        "illuminate/support": "~9.0",
+        "illuminate/support": ">=9.0",
         "laravelcollective/html": "^6.0.0",
         "intervention/image": "2.*",
-        "shxcraw/burp": "^3.1.5"
+        "shxcraw/burp": "^3.1.6"
     },
     "suggest": {
         "baum/baum": "Allows to use the DataTree widget"
@@ -41,7 +41,7 @@
         }
     },
     "require-dev": {
-        "illuminate/support": "~8.0",
+        "illuminate/support": ">=8.0",
         "orchestra/testbench": "^6.0",
         "phpunit/phpunit": "^9.3"
     },
