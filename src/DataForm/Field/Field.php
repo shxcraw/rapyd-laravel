@@ -686,7 +686,11 @@ abstract class Field extends Widget
                 $this->attributes['class'] = '';
             $this->attributes['class'] .= " ".$this->css_class;
         }
-
+        
+        if ($this->has_error) {
+            $this->attributes['class'] .= " is-invalid";
+        }
+        
         if ($this->visible === false) {
             return false;
         }
