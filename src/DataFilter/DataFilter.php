@@ -176,6 +176,11 @@ class DataFilter extends DataForm
                             }
 
                             switch ($field->clause) {
+                                case "doesntHave":
+                                    $this->query = $this->query->doesntHave($field->rel_name, 'and', function ($q) use ($field, $value) {
+                                        $q->where($field->rel_field, $field->operator, $value);
+                                    });
+                                    break;
                                 case "like":
                                     $this->query = $this->query->whereHas($field->rel_name, function ($q) use ($field, $value) {
                                         $q->where($field->rel_field, 'LIKE', '%' . $value . '%');
