@@ -2,7 +2,6 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
 use Illuminate\Support\Facades\Input;
 use Zofe\Rapyd\Rapyd;
 
@@ -11,7 +10,7 @@ class Daterange extends Date
     public $type = "daterange";
     public $multiple = true;
     public $clause = "wherebetween";
-    
+
     public function getNewValue()
     {
         Field::getNewValue();
@@ -37,14 +36,14 @@ class Daterange extends Date
             $this->value = implode($this->serialization_sep, $values);
         }
     }
-    
+
     public function build()
     {
         $output = "";
 
         unset($this->attributes['type']);
         if (parent::build() === false) return;
-        
+
         switch ($this->status) {
 
             case "show":
@@ -71,8 +70,8 @@ class Daterange extends Date
                 //$this->attributes['class'] = "form-control";
 
 
-                $from = Form::text($this->name . '[from]', @$this->values[0], $this->attributes);
-                $to = Form::text($this->name . '[to]', @$this->values[1], $this->attributes);
+                $from = html()->text($this->name . '[from]', @$this->values[0])->attributes($this->attributes);
+                $to = html()->text($this->name . '[to]', @$this->values[1])->attributes($this->attributes);
 
                 $output = '
                             <div id="range_' . $this->name . '_container">
@@ -99,10 +98,9 @@ class Daterange extends Date
 
                 break;
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
             default:
-                ;
         }
         $this->output = $output;
     }

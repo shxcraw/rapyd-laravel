@@ -1,6 +1,5 @@
-<?php  namespace Zofe\Rapyd\DataForm\Field;
+<?php namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
 
 class Radiogroup extends Field
 {
@@ -40,7 +39,7 @@ class Radiogroup extends Field
                 } else {
                     $output = $this->description;
                 }
-                $output = "<div class='help-block'>".$output."&nbsp;</div>";
+                $output = "<div class='help-block'>" . $output . "&nbsp;</div>";
                 break;
 
             case "create":
@@ -48,13 +47,13 @@ class Radiogroup extends Field
 
                 foreach ($this->options as $val => $label) {
                     $this->checked = (!is_null($this->value) and ($this->value == $val));
-                    $output .= Form::radio($this->name, $val, $this->checked).' '. $label. $this->separator;
+                    $output .= html()->radio($this->name, $this->checked, $val) . ' ' . $label . $this->separator;
                 }
-                $output = '<div>'.$output.'</div>'.$this->extra_output;
+                $output = '<div>' . $output . '</div>' . $this->extra_output;
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

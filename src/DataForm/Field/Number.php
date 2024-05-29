@@ -2,9 +2,6 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
-use Zofe\Rapyd\Rapyd;
-
 // Mapping to HTML5 Input type
 // http://www.w3.org/TR/html-markup/input.number.html
 class Number extends Field
@@ -37,11 +34,11 @@ class Number extends Field
 
             case "create":
             case "modify":
-                $output = Form::number($this->name, $this->value, $this->attributes);
+                $output = html()->number($this->name, $this->value)->attributes($this->attributes);
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

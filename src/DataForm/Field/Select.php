@@ -1,6 +1,5 @@
 <?php namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
 
 class Select extends Field
 {
@@ -35,16 +34,16 @@ class Select extends Field
                 } else {
                     $output = $this->description;
                 }
-                $output = "<div class='help-block'>".$output."&nbsp;</div>";
+                $output = "<div class='help-block'>" . $output . "&nbsp;</div>";
                 break;
 
             case "create":
             case "modify":
-                $output = Form::select($this->name, $this->options, $this->value, $this->attributes) . $this->extra_output;
+                $output = html()->select($this->name, $this->options, $this->value)->attributes($this->attributes) . $this->extra_output;
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

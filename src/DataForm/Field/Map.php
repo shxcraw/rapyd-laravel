@@ -2,7 +2,8 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
+use Rapyd;
+use Request;
 
 class Map extends Field
 {
@@ -32,56 +33,9 @@ class Map extends Field
         return $this;
     }
 
-    public function getUrl()
-    {
-        $url = 'https://maps.googleapis.com/maps/api/js?v=3.exp';
-        if ($this->key)
-        {
-            $url .= '&key=' . $this->key;
-        }
-        return $url;
-    }
-
-    public function getValue()
-    {
-        $process = (\Request::get('search') || \Request::get('save')) ? true : false;
-        
-        if ($this->request_refill == true && $process && \Request::exists($this->lat) ) {
-            $this->value['lat'] = \Request::get($this->lat);
-            $this->value['lon'] = \Request::get($this->lon);
-            $this->is_refill = true;
-            
-        } elseif (($this->status == "create") && ($this->insert_value != null)) {
-            $this->value = $this->insert_value;
-        } elseif (($this->status == "modify") && ($this->update_value != null)) {
-            $this->value = $this->update_value;
-        } elseif (isset($this->model)) {
-            $this->value['lat'] = $this->model->getAttribute($this->lat);
-            $this->value['lon'] = $this->model->getAttribute($this->lon);
-            $this->description =  implode(',', array_values($this->value));
-        }
-    }
-
-    public function getNewValue()
-    {
-        $process = (\Request::get('search') || \Request::get('save')) ? true : false;
-        if ($process && \Request::exists($this->lat)) {
-            $this->new_value['lat'] = \Request::get($this->lat);
-            $this->new_value['lon'] = \Request::get($this->lon);
-
-        } elseif (($this->action == "insert") && ($this->insert_value != null)) {
-            $this->edited = true;
-            $this->new_value = $this->insert_value;
-        } elseif (($this->action == "update") && ($this->update_value != null)) {
-            $this->edited = true;
-            $this->new_value = $this->update_value;
-        }
-    }
-    
     public function autoUpdate($save = false)
     {
-        if (isset($this->model))
-        {
+        if (isset($this->model)) {
             $this->getValue();
             $this->getNewValue();
             $this->model->setAttribute($this->lat, $this->new_value['lat']);
@@ -92,7 +46,43 @@ class Map extends Field
         }
         return true;
     }
-    
+
+    public function getValue()
+    {
+        $process = (Request::get('search') || Request::get('save')) ? true : false;
+
+        if ($this->request_refill == true && $process && Request::exists($this->lat)) {
+            $this->value['lat'] = Request::get($this->lat);
+            $this->value['lon'] = Request::get($this->lon);
+            $this->is_refill = true;
+
+        } elseif (($this->status == "create") && ($this->insert_value != null)) {
+            $this->value = $this->insert_value;
+        } elseif (($this->status == "modify") && ($this->update_value != null)) {
+            $this->value = $this->update_value;
+        } elseif (isset($this->model)) {
+            $this->value['lat'] = $this->model->getAttribute($this->lat);
+            $this->value['lon'] = $this->model->getAttribute($this->lon);
+            $this->description = implode(',', array_values($this->value));
+        }
+    }
+
+    public function getNewValue()
+    {
+        $process = (Request::get('search') || Request::get('save')) ? true : false;
+        if ($process && Request::exists($this->lat)) {
+            $this->new_value['lat'] = Request::get($this->lat);
+            $this->new_value['lon'] = Request::get($this->lon);
+
+        } elseif (($this->action == "insert") && ($this->insert_value != null)) {
+            $this->edited = true;
+            $this->new_value = $this->insert_value;
+        } elseif (($this->action == "update") && ($this->update_value != null)) {
+            $this->edited = true;
+            $this->new_value = $this->update_value;
+        }
+    }
+
     public function build()
     {
         $output = "";
@@ -110,19 +100,19 @@ class Map extends Field
                     $output = $this->layout['null_label'];
                 } else {
                     $output = "<img border=\"0\" src=\"//maps.googleapis.com/maps/api/staticmap?center={$this->value['lat']},{$this->value['lon']}&zoom={$this->zoom}&size=500x500\">";
-                   
+
                 }
                 $output = "<div class='help-block'>" . $output . "</div>";
                 break;
 
             case "create":
             case "modify":
-                $output  = Form::hidden($this->lat, $this->value['lat'], ['id'=>$this->lat]);
-                $output .= Form::hidden($this->lon, $this->value['lon'], ['id'=>$this->lon]);
-                $output .= '<div id="map_'.$this->name.'" style="width:500px; height:500px"></div>';
+                $output = html()->hidden($this->lat, $this->value['lat'])->attributes(['id' => $this->lat]);
+                $output .= html()->hidden($this->lon, $this->value['lon'])->attributes(['id' => $this->lon]);
+                $output .= '<div id="map_' . $this->name . '" style="width:500px; height:500px"></div>';
                 $output .= '<script src="' . $this->getUrl() . '"></script>';
-                
-            \Rapyd::script("
+
+                Rapyd::script("
         
             function initialize()
             {
@@ -161,16 +151,25 @@ class Map extends Field
             }
             initialize();
         ");
-                
+
                 break;
 
             case "hidden":
                 $output = '';//Form::hidden($this->db_name, $this->value);
                 break;
 
-            default:;
+            default:
         }
         $this->output = "\n" . $output . "\n" . $this->extra_output . "\n";
+    }
+
+    public function getUrl()
+    {
+        $url = 'https://maps.googleapis.com/maps/api/js?v=3.exp';
+        if ($this->key) {
+            $url .= '&key=' . $this->key;
+        }
+        return $url;
     }
 
 }

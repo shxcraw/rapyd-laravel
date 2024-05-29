@@ -1,6 +1,7 @@
-<?php  namespace Zofe\Rapyd\DataForm\Field;
+<?php
 
-use Collective\Html\FormFacade as Form;
+namespace Zofe\Rapyd\DataForm\Field;
+
 
 class Checkboxgroup extends Field
 {
@@ -26,8 +27,7 @@ class Checkboxgroup extends Field
 
         if (is_array($this->value)) {
             $this->values = $this->value;
-        }
-        else {
+        } else {
             $this->values = explode($this->serialization_sep, $this->value);
         }
 
@@ -58,7 +58,7 @@ class Checkboxgroup extends Field
                 } else {
                     $output = $this->description;
                 }
-                $output = "<div class='help-block'>".$output."&nbsp;</div>";
+                $output = "<div class='help-block'>" . $output . "&nbsp;</div>";
                 break;
 
             case "create":
@@ -69,14 +69,14 @@ class Checkboxgroup extends Field
 
                     $this->checked = in_array($val, $this->values);
 
-                    $output .= sprintf($this->format, "<div class=\"cg__item\"><label>" . Form::checkbox($this->name.'[]', $val, $this->checked) . $label . "</label></div>");
+                    $output .= sprintf($this->format, "<div class=\"cg__item\"><label>" . html()->checkbox($this->name . '[]', $this->checked, $val) . $label . "</label></div>");
                 }
                 $output .= $this->extra_output;
 
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

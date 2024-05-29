@@ -1,13 +1,15 @@
 <?php namespace Zofe\Rapyd\Demo;
 
+use Eloquent;
+
 /**
  * ArticleDetail
  */
-class ArticleDetail extends \Eloquent
+class ArticleDetail extends Eloquent
 {
 
-    protected $table = 'demo_article_detail';
     public $timestamps = false;
+    protected $table = 'demo_article_detail';
 
     public function article()
     {

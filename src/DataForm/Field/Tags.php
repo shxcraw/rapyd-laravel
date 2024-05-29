@@ -2,10 +2,9 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Session;
-use MyProject\Proxies\__CG__\stdClass;
+use stdClass;
 use Zofe\Rapyd\Rapyd;
 
 class Tags extends Field
@@ -36,11 +35,11 @@ class Tags extends Field
     {
         $this->is_local = true;
         parent::options($options);
-        foreach ($options as $key=>$value) {
-            $row = new \stdClass();
+        foreach ($options as $key => $value) {
+            $row = new stdClass();
             $row->key = $key;
             $row->value = $value;
-            $this->local_options[] =$row;
+            $this->local_options[] = $row;
         }
 
         return $this;
@@ -51,7 +50,7 @@ class Tags extends Field
     {
 
         if (!$this->is_local && !$this->record_label && $this->rel_field != "") {
-             $this->remote($this->rel_field, trim(strstr($this->rel_key,'.'),'.'));
+            $this->remote($this->rel_field, trim(strstr($this->rel_key, '.'), '.'));
         }
         parent::getValue();
 
@@ -62,11 +61,11 @@ class Tags extends Field
                 if (in_array($value, $this->values)) {
                     $description_arr[] = $description;
 
-                    $row = new \stdClass();
+                    $row = new stdClass();
                     $row->key = $value;
                     $row->value = $description;
                     $this->fill_tags .= "
-                      $('#{$this->name}').tagsinput('add', ".json_encode($row).");";
+                      $('#{$this->name}').tagsinput('add', " . json_encode($row) . ");";
                 }
             }
             $this->description = implode($this->separator, $description_arr);
@@ -84,11 +83,11 @@ class Tags extends Field
             $this->fill_tags = "";
             if (count($related)) {
                 foreach ($related as $item) {
-                    $row = new \stdClass();
+                    $row = new stdClass();
                     $row->$key = $item->$key;
                     $row->$name = $item->$name;
                     $this->fill_tags .= "
-                      $('#{$this->name}').tagsinput('add', ".json_encode($row).");";
+                      $('#{$this->name}').tagsinput('add', " . json_encode($row) . ");";
                     $description_arr[] = $item->$name;
                 }
                 $this->description = implode($this->separator, $description_arr);
@@ -99,27 +98,27 @@ class Tags extends Field
 
     public function remote($record_label = null, $record_id = null, $remote = null)
     {
-        $this->record_label = ($record_label!="") ? $record_label : $this->db_name ;
-        $this->record_id =  ($record_id!="") ? $record_id :  preg_replace('#([a-z0-9_-]+\.)?(.*)#i','$2',$this->rel_key);
-        if ($remote!="") {
+        $this->record_label = ($record_label != "") ? $record_label : $this->db_name;
+        $this->record_id = ($record_id != "") ? $record_id : preg_replace('#([a-z0-9_-]+\.)?(.*)#i', '$2', $this->rel_key);
+        if ($remote != "") {
             $this->remote = $remote;
             if (is_array($record_label)) {
                 $this->record_label = current($record_label);
             }
-            if ($this->rel_field!= "") {
+            if ($this->rel_field != "") {
                 $this->record_label = $this->rel_field;
             }
         } else {
 
             $data["entity"] = get_class($this->relation->getRelated());
-            $data["field"]  = $record_label;
+            $data["field"] = $record_label;
             if (is_array($record_label)) {
                 $this->record_label = $this->rel_field;
             }
             $hash = substr(md5(serialize($data)), 0, 12);
             Session::put($hash, $data);
 
-            $this->remote = route('rapyd.remote', array('hash'=> $hash));
+            $this->remote = route('rapyd.remote', array('hash' => $hash));
         }
 
         return $this;
@@ -127,7 +126,7 @@ class Tags extends Field
 
     public function search($record_label, $record_id = null)
     {
-        $record_id = ($record_id!="") ? $record_id :  preg_replace('#([a-z0-9_-]+\.)?(.*)#i','$2',$this->rel_key);
+        $record_id = ($record_id != "") ? $record_id : preg_replace('#([a-z0-9_-]+\.)?(.*)#i', '$2', $this->rel_key);
         $this->remote($record_label, $record_id);
 
         return $this;
@@ -151,18 +150,18 @@ class Tags extends Field
         switch ($this->status) {
             case "disabled":
             case "show":
-                if ( (!isset($this->value)) ) {
+                if ((!isset($this->value))) {
                     $output = $this->layout['null_label'];
                 } else {
                     $output = $this->description;
                 }
-                $output = "<div class='help-block'>".$output."&nbsp;</div>";
+                $output = "<div class='help-block'>" . $output . "&nbsp;</div>";
                 break;
 
             case "create":
             case "modify":
 
-                $output  =  Form::text($this->name, '', array_merge($this->attributes, array('id'=>"".$this->name)))."\n";
+                $output = html()->text($this->name, '')->attributes(array_merge($this->attributes, array('id' => "" . $this->name))) . "\n";
                 if ($this->remote) {
                     $script = <<<acp
 
@@ -243,12 +242,12 @@ acp;
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->db_name, $this->value);
+                $output = html()->hidden($this->db_name, $this->value);
                 break;
 
-            default:;
+            default:
         }
-        $this->output = "\n".$output."\n". $this->extra_output."\n";
+        $this->output = "\n" . $output . "\n" . $this->extra_output . "\n";
     }
 
 }

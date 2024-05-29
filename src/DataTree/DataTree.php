@@ -3,8 +3,13 @@
 namespace Zofe\Rapyd\DataTree;
 
 use Baum\Node;
+use DB;
 use Illuminate\Support\Collection;
-use Collective\Html\FormFacade as Form;
+use InvalidArgumentException;
+use LogicException;
+use Rapyd;
+use Request;
+use View;
 use Zofe\Rapyd\DataGrid\Cell;
 use Zofe\Rapyd\DataGrid\DataGrid;
 use Zofe\Rapyd\DataGrid\Row;
@@ -28,13 +33,13 @@ class DataTree extends DataGrid
     public static function source($source)
     {
         if (!$source instanceof Node) {
-            throw new \InvalidArgumentException('DataTree only works with Baum\Node instances');
+            throw new InvalidArgumentException('DataTree only works with Baum\Node instances');
         }
         $instance = parent::source($source);
         $instance->attr('data-instance-id', spl_object_hash($instance));
-        \Rapyd::css('datatree/css/datatree.css');
-        \Rapyd::js('datatree/js/nestable/jquery.nestable.js');
-        \Rapyd::js('datatree/js/datatree.js');
+        Rapyd::css('datatree/css/datatree.css');
+        Rapyd::js('datatree/js/nestable/jquery.nestable.js');
+        Rapyd::js('datatree/js/datatree.js');
         return $instance;
     }
 
@@ -44,14 +49,14 @@ class DataTree extends DataGrid
 
         $view == '' and $view = 'rapyd::datatree';
 
-        $this->open = Form::open($this->attributes);
-        $this->close = Form::hidden('save', 1) . Form::close();
+        $this->open = html()->form()->attributes($this->attributes)->open();
+        $this->close = html()->hidden('save', 1) . html()->form()->close();
 
         // we save on POST and only if the widget's own input variable is filled
         // because sometimes we have more than a tree widget on the same page
         // but just one save
 
-        if (\Request::method() == 'POST' && \Request::get($this->name)) {
+        if (Request::method() == 'POST' && Request::get($this->name)) {
             $this->lockAndSave();
         }
 
@@ -59,29 +64,84 @@ class DataTree extends DataGrid
         Persistence::save();
         $this->rows = $this->makeRowsRecursive($this->data);
 
-        $this->output = \View::make($view, array('dg' => $this, 'buttons' => $this->button_container, 'label' => $this->label))->render();
+        $this->output = View::make($view, array('dg' => $this, 'buttons' => $this->button_container, 'label' => $this->label))->render();
         return $this->output;
     }
 
-    protected function makeRowsRecursive($data, $depth = 0)
+    public function initJsWidget()
     {
-        $rows = [];
-        foreach ($data as $item) {
-            $row = $this->makeRow($item);
-            $row->children = $this->makeRowsRecursive($item['children'], $depth + 1);
-            $rows[] = $row;
+        $onChange = $this->onChange ?: '';
+        $ajax = $this->autoSave ? '$.post("", {"' . $this->name() . '": $(this).nestable("serialize")});' : '';
+
+        $script = '
+
+$("[data-instance-id=\\"' . $this->attributes['data-instance-id'] . '\\"]").each(function(){
+ var root = $(this);
+ var form = root.find(".datatree-values");
+ root.find(".datatree-inner-wrapper").nestable({
+        listNodeName: "ol",
+        itemNodeName: "li",
+        rootClass: "datatree-inner-wrapper",
+        listClass: "datatree-list",
+        itemClass: "datatree-item",
+        dragClass: "datatree-dragel",
+        handleClass: "datatree-handle",
+        collapsedClass: "datatree-collapsed",
+        placeClass: "datatree-placeholder",
+        noDragClass: "datatree-nodrag",
+        emptyClass: "datatree-empty",
+        expandBtnHTML: "<button data-action=\"expand\" type=\"button\">Expand</button>",
+        collapseBtnHTML: "<button data-action=\"collapse\" type=\"button\">Collapse</button>",
+        group: ' . $this->group . ',
+        maxDepth: ' . $this->maxDepth . ',
+        threshold: 20
+    }).on("mousedown", "a", function (e) {
+        e.stopImmediatePropagation();
+    }).each(function () {
+        var ol = $(this).children(".datatree-list");
+        if (ol.length) rapyd.datatree.updateDepth(ol);
+        rapyd.datatree.updateForm($(this), form, "' . $this->name . '");
+    }).on("change", function () {
+        var ol = $(this).children(".datatree-list");
+        if (ol.length) rapyd.datatree.updateDepth(ol);
+        var updated = rapyd.datatree.updateForm($(this), form, "' . $this->name . '");
+        ' . $ajax . '
+        ' . $onChange . '
+    });
+    $(".datatree").submit(function () {
+        var action = $(this).attr("action") || document.location.href;
+        //return false;
+    });
+ });
+        ';
+
+        Rapyd::script($script);
+    }
+
+    /**
+     * Get/Set the input name of the DataTree data. You have to change
+     * this if you display multiple datatrees in the same page.
+     *
+     * @param null $value
+     * @return $this|string
+     */
+    public function name($value = null)
+    {
+        if (func_num_args()) {
+            $this->name = $value;
+            return $this;
         }
-        return $rows;
+        return $this->name;
     }
 
     protected function lockAndSave()
     {
         // use a transaction to prevent concurrent writes and, hopefully,
         // improve the performance
-        \DB::transaction(function () {
+        DB::transaction(function () {
             // lets lock all the table and get away with it, nested sets
             // are so fragile that this really seems the better option
-            \DB::table($this->source->getTable())->select($this->source->getKeyName())->lockForUpdate()->get();
+            DB::table($this->source->getTable())->select($this->source->getKeyName())->lockForUpdate()->get();
 
             // rebuild the tree and save all the changed nodes
             $this->performSave();
@@ -94,7 +154,7 @@ class DataTree extends DataGrid
         // - the orthodox will send a json string
         // - the ajax version will send an array
 
-        $var = \Request::get($this->name);
+        $var = Request::get($this->name);
         if (is_string($var)) {
             $var = json_decode($var, true);
         }
@@ -218,7 +278,7 @@ class DataTree extends DataGrid
 
         $newRoot = $newTree->first();
         if ($newRoot->getKey() != $root->getKey() || count($newTree) != 1) {
-            throw new \LogicException("Invalid tree");
+            throw new LogicException("Invalid tree");
         }
 
         // now we take the new tree and recursively recalculate the left, right
@@ -252,7 +312,7 @@ class DataTree extends DataGrid
             }
         }
         foreach ($bulk as $id => $fields) {
-            \DB::table($this->source->getTable())
+            DB::table($this->source->getTable())
                 ->where($this->source->getKeyName(), $id)
                 ->update($fields);
         }
@@ -272,6 +332,17 @@ class DataTree extends DataGrid
             // at all.
             $children[$depth][] = $new;
         }
+    }
+
+    protected function makeRowsRecursive($data, $depth = 0)
+    {
+        $rows = [];
+        foreach ($data as $item) {
+            $row = $this->makeRow($item);
+            $row->children = $this->makeRowsRecursive($item['children'], $depth + 1);
+            $rows[] = $row;
+        }
+        return $rows;
     }
 
     protected function makeRow($item)
@@ -326,7 +397,7 @@ class DataTree extends DataGrid
     public function submit($name, $position = "BL", $options = array())
     {
         $options = array_merge(array("class" => "btn btn-primary"), $options);
-        $this->button_container[$position][] = Form::submit($name, $options);
+        $this->button_container[$position][] = html()->submit($name)->attributes($options);
 
         return $this;
     }
@@ -379,6 +450,8 @@ class DataTree extends DataGrid
         return $this->autoSave;
     }
 
+    // inline script
+
     /**
      * Set the group of the DataTree. Multiple DataTrees of the same
      * group will be able to exchange items.
@@ -394,73 +467,5 @@ class DataTree extends DataGrid
             return $this;
         }
         return $this->group;
-    }
-
-    /**
-     * Get/Set the input name of the DataTree data. You have to change
-     * this if you display multiple datatrees in the same page.
-     *
-     * @param null $value
-     * @return $this|string
-     */
-    public function name($value = null)
-    {
-        if (func_num_args()) {
-            $this->name = $value;
-            return $this;
-        }
-        return $this->name;
-    }
-
-    // inline script
-
-    public function initJsWidget()
-    {
-        $onChange = $this->onChange ?: '';
-        $ajax = $this->autoSave ? '$.post("", {"'.$this->name().'": $(this).nestable("serialize")});' : '';
-
-        $script = '
-
-$("[data-instance-id=\\"' . $this->attributes['data-instance-id'] . '\\"]").each(function(){
- var root = $(this);
- var form = root.find(".datatree-values");
- root.find(".datatree-inner-wrapper").nestable({
-        listNodeName: "ol",
-        itemNodeName: "li",
-        rootClass: "datatree-inner-wrapper",
-        listClass: "datatree-list",
-        itemClass: "datatree-item",
-        dragClass: "datatree-dragel",
-        handleClass: "datatree-handle",
-        collapsedClass: "datatree-collapsed",
-        placeClass: "datatree-placeholder",
-        noDragClass: "datatree-nodrag",
-        emptyClass: "datatree-empty",
-        expandBtnHTML: "<button data-action=\"expand\" type=\"button\">Expand</button>",
-        collapseBtnHTML: "<button data-action=\"collapse\" type=\"button\">Collapse</button>",
-        group: ' . $this->group . ',
-        maxDepth: ' . $this->maxDepth . ',
-        threshold: 20
-    }).on("mousedown", "a", function (e) {
-        e.stopImmediatePropagation();
-    }).each(function () {
-        var ol = $(this).children(".datatree-list");
-        if (ol.length) rapyd.datatree.updateDepth(ol);
-        rapyd.datatree.updateForm($(this), form, "' . $this->name . '");
-    }).on("change", function () {
-        var ol = $(this).children(".datatree-list");
-        if (ol.length) rapyd.datatree.updateDepth(ol);
-        var updated = rapyd.datatree.updateForm($(this), form, "' . $this->name . '");
-        '.$ajax.'
-        '.$onChange.'
-    });
-    $(".datatree").submit(function () {
-        var action = $(this).attr("action") || document.location.href;
-        //return false;
-    });
- });
-        ';
-
-        \Rapyd::script($script);
     }
 }

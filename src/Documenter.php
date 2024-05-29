@@ -7,12 +7,12 @@ class Documenter
 {
     public static function showCode($filepath)
     {
-        if (file_exists(app_path() ."/".$filepath)) {
-            $file = app_path() ."/".$filepath;
-        } elseif (file_exists(app_path() ."/../packages/".$filepath)) {
-            $file = app_path() ."/../packages/".$filepath;
-        } elseif (file_exists(app_path() ."/../vendor/".$filepath)) {
-            $file = app_path() ."/../vendor/".$filepath;
+        if (file_exists(app_path() . "/" . $filepath)) {
+            $file = app_path() . "/" . $filepath;
+        } elseif (file_exists(app_path() . "/../packages/" . $filepath)) {
+            $file = app_path() . "/../packages/" . $filepath;
+        } elseif (file_exists(app_path() . "/../vendor/" . $filepath)) {
+            $file = app_path() . "/../vendor/" . $filepath;
         } else {
             return "";
         }
@@ -26,27 +26,27 @@ class Documenter
 
     public static function showMethod($class, $methods)
     {
-        $rclass     = new ReflectionClass($class);
-        $definition = implode("", array_slice(file($rclass->getFileName()), $rclass->getStartLine()-1, 1));
+        $rclass = new ReflectionClass($class);
+        $definition = implode("", array_slice(file($rclass->getFileName()), $rclass->getStartLine() - 1, 1));
 
-        $code       = "\n".$definition."\n....\n\n";
+        $code = "\n" . $definition . "\n....\n\n";
 
         if (!is_array($methods))
             $methods = array($methods);
 
         foreach ($methods as $method) {
-            $method     = new ReflectionMethod($class, $method);
-            $filename   = $method->getFileName();
-            $start_line = $method->getStartLine()-1;
-            $end_line   = $method->getEndLine();
-            $length     = $end_line - $start_line;
-            $source     = file($filename);
-            $content    = implode("", array_slice($source, $start_line, $length));
+            $method = new ReflectionMethod($class, $method);
+            $filename = $method->getFileName();
+            $start_line = $method->getStartLine() - 1;
+            $end_line = $method->getEndLine();
+            $length = $end_line - $start_line;
+            $source = file($filename);
+            $content = implode("", array_slice($source, $start_line, $length));
 
-            $code .= $content."\n\n";
+            $code .= $content . "\n\n";
         }
 
-        $code = highlight_string("<?php ".$code, true);
+        $code = highlight_string("<?php " . $code, true);
         $code = str_replace('&lt;?php&nbsp;', '', $code);
 
         return "<pre>\n" . $code . "\n</pre>";
@@ -56,7 +56,7 @@ class Documenter
     {
         $path = with(new ReflectionClass($class))->getFileName();
 
-        return realpath(dirname($path).'/../../');
+        return realpath(dirname($path) . '/../../');
     }
 
 }

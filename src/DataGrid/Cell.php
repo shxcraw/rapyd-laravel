@@ -1,5 +1,6 @@
 <?php namespace Zofe\Rapyd\DataGrid;
 
+use Exception;
 use Zofe\Rapyd\Helpers\HTML;
 
 class Cell
@@ -12,6 +13,7 @@ class Cell
     {
         $this->name = $name;
     }
+
     public function value($value)
     {
         $this->value = $value;
@@ -46,7 +48,7 @@ class Cell
         foreach ($filters as $filter) {
             $params = array();
             if (preg_match('/([^\[]*+)\[(.+)\]/', $filter, $match)) {
-                $filter   = $match[1];
+                $filter = $match[1];
                 $params = explode(',', $match[2]);
             }
 
@@ -59,7 +61,7 @@ class Cell
 
                 try {
                     $this->value = call_user_func_array($filter, $params);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     return false;
                 }
 

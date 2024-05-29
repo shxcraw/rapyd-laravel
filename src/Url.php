@@ -6,45 +6,17 @@ class Url
 {
     public $url;
 
-    protected $semantic = array( 'page'    , 'orderby',
-                                 'show'   , 'modify' ,
-                                 'create' , 'insert' ,
-                                 'update' , 'delete' ,
-                                 'process');
-
-    public static function unparse_str($array)
-    {
-        return '?' . preg_replace('/%5B[0-9]+%5D/simU', '%5B%5D', http_build_query($array));
-    }
+    protected $semantic = array('page', 'orderby',
+        'show', 'modify',
+        'create', 'insert',
+        'update', 'delete',
+        'process');
 
     public function set($url)
     {
         $this->url = $url;
 
         return $this;
-    }
-
-    public function get()
-    {
-        Rapyd::getContainer('url')->to($this->current());
-
-        if ($this->url == '') {
-            return $this->current();
-        } else {
-            $url       = $this->url ;
-            $this->url = '';
-
-            return $url;
-        }
-    }
-
-    public function current($uri = false)
-    {
-        if ($uri) {
-            return Request::url();
-        }
-
-        return Request::fullUrl();
     }
 
     public function getArray()
@@ -58,57 +30,51 @@ class Url
         return $params;
     }
 
+    public function current($uri = false)
+    {
+        if ($uri) {
+            return Request::url();
+        }
+
+        return Request::fullUrl();
+    }
+
     public function append($key, $value)
     {
-        $url      = $this->get();
+        $url = $this->get();
         $qs_array = array();
 
         if (strpos($url, '?') !== false) {
-            $qs  = substr( $url, strpos($url, '?') + 1 );
-            $url = substr( $url, 0, strpos($url, '?' )) ;
+            $qs = substr($url, strpos($url, '?') + 1);
+            $url = substr($url, 0, strpos($url, '?'));
 
             parse_str($qs, $qs_array);
         }
 
         $qs_array[$key] = $value;
-        $query_string   = self::unparse_str($qs_array);
-        $this->url      = $url . $query_string;
+        $query_string = self::unparse_str($qs_array);
+        $this->url = $url . $query_string;
 
         return $this;
     }
 
-    public function remove($keys)
+    public function get()
     {
-        $qs_array = array();
-        $url      = $this->get();
+        Rapyd::getContainer('url')->to($this->current());
 
-        if (strpos($url, '?') === false) {
-            $this->url = $url;
+        if ($this->url == '') {
+            return $this->current();
+        } else {
+            $url = $this->url;
+            $this->url = '';
 
-            return $this;
+            return $url;
         }
+    }
 
-        $qs  = substr( $url, strpos($url, '?') + 1 );
-        $url = substr( $url, 0, strpos($url, '?') ) ;
-
-        parse_str($qs, $qs_array);
-
-        if (!is_array($keys)) {
-            if ($keys == 'ALL') {
-                $this->url = $url;
-
-                return $this;
-            }
-
-            $keys = array($keys);
-        }
-        foreach ($keys as $key) {
-            unset($qs_array[$key]);
-        }
-        $query_string = self::unparse_str($qs_array);
-        $this->url    = $url . $query_string;
-
-        return $this;
+    public static function unparse_str($array)
+    {
+        return '?' . preg_replace('/%5B[0-9]+%5D/simU', '%5B%5D', http_build_query($array));
     }
 
     public function removeAll($cid = null)
@@ -126,14 +92,48 @@ class Url
         return $this->remove($semantic);
     }
 
+    public function remove($keys)
+    {
+        $qs_array = array();
+        $url = $this->get();
+
+        if (strpos($url, '?') === false) {
+            $this->url = $url;
+
+            return $this;
+        }
+
+        $qs = substr($url, strpos($url, '?') + 1);
+        $url = substr($url, 0, strpos($url, '?'));
+
+        parse_str($qs, $qs_array);
+
+        if (!is_array($keys)) {
+            if ($keys == 'ALL') {
+                $this->url = $url;
+
+                return $this;
+            }
+
+            $keys = array($keys);
+        }
+        foreach ($keys as $key) {
+            unset($qs_array[$key]);
+        }
+        $query_string = self::unparse_str($qs_array);
+        $this->url = $url . $query_string;
+
+        return $this;
+    }
+
     public function replace($key, $newkey)
     {
         $qs_array = array();
-        $url      = $this->get();
+        $url = $this->get();
 
         if (strpos($url, '?') !== false) {
-            $qs  = substr($url, strpos($url, '?') + 1);
-            $url = substr($url, 0, strpos($url, '?')) ;
+            $qs = substr($url, strpos($url, '?') + 1);
+            $url = substr($url, 0, strpos($url, '?'));
 
             parse_str($qs, $qs_array);
         }
@@ -144,14 +144,14 @@ class Url
         }
 
         $query_string = self::unparse_str($qs_array);
-        $this->url    = $url . $query_string;
+        $this->url = $url . $query_string;
 
         return $this;
     }
 
     public function value($key, $default = false)
     {
-        if ( strpos($key, '|') ) {
+        if (strpos($key, '|')) {
             $keys = explode('|', $key);
             foreach ($keys as $k) {
                 $v = $this->value($k, $default);

@@ -2,9 +2,6 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
-use Zofe\Rapyd\Rapyd;
-
 class Numberrange extends Number
 {
     public $type = "numberrange";
@@ -42,8 +39,8 @@ class Numberrange extends Number
             case "create":
             case "modify":
 
-                $lower = Form::number($this->name . '[from]', @$this->values[0], $this->attributes);
-                $upper = Form::number($this->name . '[to]', @$this->values[1], $this->attributes);
+                $lower = html()->number($this->name . '[from]', @$this->values[0])->attributes($this->attributes);
+                $upper = html()->number($this->name . '[to]', @$this->values[1])->attributes($this->attributes);
 
                 $output = '
                             <div id="range_' . $this->name . '_container">
@@ -59,7 +56,7 @@ class Numberrange extends Number
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

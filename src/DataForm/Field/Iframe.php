@@ -2,9 +2,8 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Input;
+use Rapyd;
 
 class Iframe extends Field
 {
@@ -13,30 +12,18 @@ class Iframe extends Field
     public $height = "200";
     public $scrolling = "auto";
     public $frameborder = "0";
-    
-    
+
+
     public function src($src)
     {
         $this->src = $src;
         return $this;
     }
-    
-    protected function iframe()
-    {
-        $this->src = $this->parseString($this->src);
-        return  sprintf(
-            '<IFRAME src="%s" width="100%%" height="%s" scrolling="%s" frameborder="%s" id="%s" onLoad="iframeAutoResize(\'%s\');">
-            iframe not supported
-            </IFRAME>', $this->src, $this->height, $this->scrolling, $this->frameborder, $this->name, $this->name);
-        
-        
-    }
-    
-    
+
     public function build()
     {
         $output = "";
-        
+
         if (parent::build() === false) return;
 
         switch ($this->status) {
@@ -44,8 +31,8 @@ class Iframe extends Field
             case "show":
             case "create":
             case "modify":
-                    $output = $this->iframe();
-                    \Rapyd::script("
+                $output = $this->iframe();
+                Rapyd::script("
                         if(typeof iframeAutoResize != 'function'){
                             window.iframeAutoResize = function(id){
                                 var newheight;
@@ -63,14 +50,25 @@ class Iframe extends Field
                         };
                     ");
 
-                    
+
                 break;
             case "hidden":
                 $output = "";
                 break;
 
-            default:;
+            default:
         }
-        $this->output = "\n".$output."\n". $this->extra_output."\n";
+        $this->output = "\n" . $output . "\n" . $this->extra_output . "\n";
+    }
+
+    protected function iframe()
+    {
+        $this->src = $this->parseString($this->src);
+        return sprintf(
+            '<IFRAME src="%s" width="100%%" height="%s" scrolling="%s" frameborder="%s" id="%s" onLoad="iframeAutoResize(\'%s\');">
+            iframe not supported
+            </IFRAME>', $this->src, $this->height, $this->scrolling, $this->frameborder, $this->name, $this->name);
+
+
     }
 }

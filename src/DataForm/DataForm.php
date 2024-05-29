@@ -2,7 +2,16 @@
 
 namespace Zofe\Rapyd\DataForm;
 
+use ArrayObject;
+use Closure;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\View;
+use InvalidArgumentException;
 use Zofe\Rapyd\DataForm\Field\Auto;
 use Zofe\Rapyd\DataForm\Field\Autocomplete;
 use Zofe\Rapyd\DataForm\Field\Colorpicker;
@@ -10,23 +19,17 @@ use Zofe\Rapyd\DataForm\Field\Date;
 use Zofe\Rapyd\DataForm\Field\Field;
 use Zofe\Rapyd\DataForm\Field\File;
 use Zofe\Rapyd\DataForm\Field\Hidden;
+use Zofe\Rapyd\DataForm\Field\Number;
+use Zofe\Rapyd\DataForm\Field\Numberrange;
 use Zofe\Rapyd\DataForm\Field\Password;
 use Zofe\Rapyd\DataForm\Field\Radiogroup;
 use Zofe\Rapyd\DataForm\Field\Redactor;
 use Zofe\Rapyd\DataForm\Field\Select;
 use Zofe\Rapyd\DataForm\Field\Tags;
-use Zofe\Rapyd\DataForm\Field\Number;
-use Zofe\Rapyd\DataForm\Field\Numberrange;
 use Zofe\Rapyd\DataForm\Field\Text;
 use Zofe\Rapyd\DataForm\Field\Textarea;
-use Zofe\Rapyd\Widget;
-use Collective\Html\FormFacade as Form;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Input;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
 use Zofe\Rapyd\Rapyd;
+use Zofe\Rapyd\Widget;
 
 /**
  * Class DataForm
@@ -72,7 +75,7 @@ class DataForm extends Widget
     public $model_relations;
     public $validator;
     public $validator_messages = array();
-    
+
     public $output = "";
     public $custom_output = null;
     public $fields = array();
@@ -96,47 +99,55 @@ class DataForm extends Widget
     {
         parent::__construct();
         $this->process_url = $this->url->append('process', 1)->get();
-        $this->model_relations = new \ArrayObject();
+        $this->model_relations = new ArrayObject();
     }
 
     /**
-     * @param string $name
-     * @param string $label
-     * @param string $type
-     * @param string $validation
-     *
-     * @return mixed
+     * @return static
      */
-    public function add($name, $label, $type, $validation = '')
+    public static function create()
     {
-        if (strpos($type, "\\") !== false) {
-            $field_class = $type;
-        } else {
-            $field_class = '\Zofe\Rapyd\DataForm\Field\\' .  ucfirst($type);
-        }
+        $ins = new static();
+        $ins->cid = $ins->getIdentifier();
+        $ins->sniffStatus();
+        $ins->sniffAction();
 
-        //instancing
+        return $ins;
+    }
+
+    protected function sniffStatus()
+    {
         if (isset($this->model)) {
-            $field_obj = new $field_class($name, $label, $this->model, $this->model_relations);
+            $this->status = ($this->model->exists) ? "modify" : "create";
         } else {
-            $field_obj = new $field_class($name, $label);
+            $this->status = "create";
         }
+    }
 
-        if (!$field_obj instanceof Field) {
-            throw new \InvalidArgumentException('Third argument («type») must point to class inherited Field class');
+    protected function sniffAction()
+    {
+
+        if (Request::isMethod('post') && ($this->url->value('process'))) {
+            $this->action = ($this->status == "modify") ? "update" : "insert";
         }
+    }
 
-        if ($field_obj->type == "file") {
-            $this->multipart = true;
+    /**
+     * @param Model $source
+     *
+     * @return static
+     */
+    public static function source($source = '')
+    {
+        $ins = new static();
+        if (is_object($source) && is_a($source, "\Illuminate\Database\Eloquent\Model")) {
+            $ins->model = $source;
         }
+        $ins->cid = $ins->getIdentifier();
+        $ins->sniffStatus();
+        $ins->sniffAction();
 
-        //default group
-        if (isset($this->default_group) && !isset($field_obj->group)) {
-            $field_obj->group = $this->default_group;
-        }
-        $this->fields[$name] = $field_obj;
-
-        return $field_obj;
+        return $ins;
     }
 
     /**
@@ -153,39 +164,16 @@ class DataForm extends Widget
     }
 
     /**
-     * remove field where type==$type from field list and button container
-     * @param $type
-     * @return $this
-     */
-    public function removeType($type)
-    {
-        foreach ($this->fields as $fieldname => $field) {
-            if ($field->type == $type) {
-                unset($this->fields[$fieldname]);
-            }
-        }
-        foreach ($this->button_container as $container => $buttons) {
-            foreach ($buttons as $key=>$button) {
-                if (strpos($button, 'type="'.$type.'"')!==false) {
-                    $this->button_container[$container][$key] = "";
-                }
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @param string $name
      * @param string $position
-     * @param array  $options
+     * @param array $options
      *
      * @return $this
      */
     public function submit($name, $position = "BL", $options = array())
     {
         $options = array_merge(array("class" => "btn btn-primary"), $options);
-        $this->button_container[$position][] = Form::submit($name, $options);
+        $this->button_container[$position][] = html()->submit($name)->name($name)->attributes($options);
 
         return $this;
     }
@@ -193,7 +181,7 @@ class DataForm extends Widget
     /**
      * @param string $name
      * @param string $position
-     * @param array  $options
+     * @param array $options
      *
      * @return $this
      */
@@ -203,6 +191,19 @@ class DataForm extends Widget
         $this->link($this->url->current(true), $name, $position, $options);
 
         return $this;
+    }
+
+    /**
+     * get entire field output (label, output, and messages)
+     * @param $field_name
+     * @param array $ttributes
+     * @return string
+     */
+    public function render($field_name, array $attributes = array())
+    {
+        $field = $this->field($field_name, $attributes);
+
+        return $field->all();
     }
 
     /**
@@ -225,159 +226,56 @@ class DataForm extends Widget
     }
 
     /**
-     * get entire field output (label, output, and messages)
-     * @param $field_name
-     * @param  array  $ttributes
-     * @return string
+     * build form output and prepare form partials (header / footer / ..)
+     * @param string $view
      */
-    public function render($field_name, array $attributes = array())
+    public function build($view = '')
     {
-        $field = $this->field($field_name, $attributes);
-
-        return $field->all();
-    }
-
-    /**
-     * @return static
-     */
-    public static function create()
-    {
-        $ins = new static();
-        $ins->cid = $ins->getIdentifier();
-        $ins->sniffStatus();
-        $ins->sniffAction();
-
-        return $ins;
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model $source
-     *
-     * @return static
-     */
-    public static function source($source = '')
-    {
-        $ins = new static();
-        if (is_object($source) && is_a($source, "\Illuminate\Database\Eloquent\Model")) {
-            $ins->model = $source;
+        if (isset($this->attributes['class']) and strpos($this->attributes['class'], 'form-inline') !== false) {
+            $this->view = 'rapyd::dataform_inline';
+            $this->orientation = 'inline';
+            $this->has_labels = false;
         }
-        $ins->cid = $ins->getIdentifier();
-        $ins->sniffStatus();
-        $ins->sniffAction();
-
-        return $ins;
-    }
-
-    /**
-     * add custom error messages to the validator inscance
-     * @param array $messages
-     */
-    public function errors($messages = [])
-    {
-        $this->validator_messages = $messages; 
-    }
-    
-    /**
-     * @return bool
-     */
-    protected function isValid()
-    {
-        if ($this->error != "") {
-            return false;
+        if (isset($this->attributes['class']) and strpos($this->attributes['class'], 'without-labels') !== false) {
+            $this->has_labels = false;
         }
-        foreach ($this->fields as $field) {
-            $field->action = $this->action;
-            if (isset($field->rule)) {
-                $rules[$field->name] = $field->rule;
-                $attributes[$field->name] = $field->label;
+        if (isset($this->attributes['class']) and strpos($this->attributes['class'], 'with-placeholders') !== false) {
+            $this->has_placeholders = true;
+        }
+        if ($this->output != '') return;
+        if ($view != '') $this->view = $view;
+
+        $this->process();
+
+        //callable
+        if ($this->form_callable && $this->process_status == "success") {
+            $callable = $this->form_callable;
+            $result = $callable($this);
+            if ($result && is_a($result, 'Illuminate\Http\RedirectResponse')) {
+                $this->redirect = $result;
+            } elseif ($result && is_a($result, 'Illuminate\View\View')) {
+                $this->custom_output = $result;
+            }
+
+            //reprocess if an error is added in closure
+            if ($this->process_status == 'error') {
+                $this->process();
             }
         }
-        if (isset($this->validator)) {
-            return !$this->validator->fails();
+        //cleanup submits if success
+        if ($this->process_status == 'success') {
+            $this->removeType('submit');
         }
-        if (isset($rules)) {
+        $this->buildButtons();
+        $this->buildFields();
+        $dataform = $this->buildForm();
+        $this->output = $dataform->render();
 
-            $this->validator = Validator::make(\Request::all(), $rules, $this->validator_messages, $attributes);
-
-            return !$this->validator->fails();
-        } else {
-            return true;
-        }
-    }
-
-    /**
-     * append error (to be used in passed/saved closure)
-     * @param string $url
-     * @param string $name
-     * @param string $position
-     * @param array  $attributes
-     *
-     * @return $this
-     */
-    public function error($error)
-    {
-        $this->process_status = 'error';
-        $this->message = '';
-        $this->error .= $error;
-
-        return $this;
-    }
-
-    /**
-     * @param string $process_status
-     *
-     * @return bool
-     */
-    public function on($process_status = "false")
-    {
-        if (is_array($process_status))
-            return (bool) in_array($this->process_status, $process_status);
-        return ($this->process_status == $process_status);
-    }
-
-    protected function sniffStatus()
-    {
-        if (isset($this->model)) {
-            $this->status = ($this->model->exists) ? "modify" : "create";
-        } else {
-            $this->status = "create";
-        }
-    }
-
-    /**
-     * needed by DataEdit, to build standard action buttons
-     */
-    protected function buildButtons()
-    {
-
-    }
-
-    /**
-     * build each field and share some data from dataform to field (form status, validation errors)
-     */
-    protected function buildFields()
-    {
-        $messages = (isset($this->validator)) ? $this->validator->messages() : false;
-
-        foreach ($this->fields as $field) {
-            $field->status = $this->status;
-            $field->orientation = $this->orientation;
-            $field->has_label = $this->has_labels;
-            $field->has_placeholder = $this->has_placeholders;
-            if ($messages and $messages->has($field->name)) {
-                $field->messages = $messages->get($field->name);
-                $field->has_error = " has-error";
-            }
-            $field->build();
-        }
-    }
-
-    protected function sniffAction()
-    {
-
-        if (Request::isMethod('post') && ($this->url->value('process'))) {
-            $this->action = ($this->status == "modify") ? "update" : "insert";
-        }
+        $sections = $dataform->renderSections();
+        $this->header = $sections['df.header'];
+        $this->footer = $sections['df.footer'];
+        $this->body = @$sections['df.fields'];
+        Rapyd::setForm($this);
     }
 
     protected function process()
@@ -440,6 +338,85 @@ class DataForm extends Widget
         }
     }
 
+    /**
+     * @return bool
+     */
+    protected function isValid()
+    {
+        if ($this->error != "") {
+            return false;
+        }
+        foreach ($this->fields as $field) {
+            $field->action = $this->action;
+            if (isset($field->rule)) {
+                $rules[$field->name] = $field->rule;
+                $attributes[$field->name] = $field->label;
+            }
+        }
+        if (isset($this->validator)) {
+            return !$this->validator->fails();
+        }
+        if (isset($rules)) {
+
+            $this->validator = Validator::make(\Request::all(), $rules, $this->validator_messages, $attributes);
+
+            return !$this->validator->fails();
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * remove field where type==$type from field list and button container
+     * @param $type
+     * @return $this
+     */
+    public function removeType($type)
+    {
+        foreach ($this->fields as $fieldname => $field) {
+            if ($field->type == $type) {
+                unset($this->fields[$fieldname]);
+            }
+        }
+        foreach ($this->button_container as $container => $buttons) {
+            foreach ($buttons as $key => $button) {
+                if (strpos($button, 'type="' . $type . '"') !== false) {
+                    $this->button_container[$container][$key] = "";
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * needed by DataEdit, to build standard action buttons
+     */
+    protected function buildButtons()
+    {
+
+    }
+
+    /**
+     * build each field and share some data from dataform to field (form status, validation errors)
+     */
+    protected function buildFields()
+    {
+        $messages = (isset($this->validator)) ? $this->validator->messages() : false;
+
+        foreach ($this->fields as $field) {
+            $field->status = $this->status;
+            $field->orientation = $this->orientation;
+            $field->has_label = $this->has_labels;
+            $field->has_placeholder = $this->has_placeholders;
+            if ($messages and $messages->has($field->name)) {
+                $field->messages = $messages->get($field->name);
+                $field->has_error = " has-error";
+            }
+            $field->build();
+        }
+    }
+
     protected function buildForm()
     {
         $this->prepareForm();
@@ -455,92 +432,67 @@ class DataForm extends Widget
 
         // See if we need a multipart form
         foreach ($this->fields as $field_obj) {
-            if (in_array($field_obj->type, array('file','image'))) {
+            if (in_array($field_obj->type, array('file', 'image'))) {
                 $form_attr['files'] = 'true';
                 break;
             }
         }
         // Set the form open and close
         if ($this->status == 'show') {
-            $this->open = '<div class="'.(isset($form_attr['class']) ? $form_attr['class'] : 'form' ).'">';
+            $this->open = '<div class="' . (isset($form_attr['class']) ? $form_attr['class'] : 'form') . '">';
             $this->close = '</div>';
         } else {
 
-            $this->open = Form::open($form_attr);
-            $this->close = Form::hidden('save', 1) . Form::close();
+            $this->open = html()->form()->attributes($form_attr)->open();
+            $this->close = html()->hidden('save', 1) . html()->form()->close();
 
             if ($this->method == "GET") {
-                $this->close = Form::hidden('search', 1) . Form::close();
+                $this->close = html()->hidden('search', 1) . html()->form()->close();
             }
         }
         if (isset($this->validator)) {
             $this->errors = $this->validator->messages();
-            $this->error .=  implode('<br />',$this->errors->all());
+            $this->error .= implode('<br />', $this->errors->all());
         }
     }
 
     /**
-     * build form output and prepare form partials (header / footer / ..)
-     * @param string $view
+     * add custom error messages to the validator inscance
+     * @param array $messages
      */
-    public function build($view = '')
+    public function errors($messages = [])
     {
-        if (isset($this->attributes['class']) and strpos($this->attributes['class'], 'form-inline') !== false) {
-            $this->view = 'rapyd::dataform_inline';
-            $this->orientation = 'inline';
-            $this->has_labels = false;
-        }
-        if (isset($this->attributes['class']) and strpos($this->attributes['class'], 'without-labels') !== false) {
-            $this->has_labels = false;
-        }
-        if (isset($this->attributes['class']) and strpos($this->attributes['class'], 'with-placeholders') !== false) {
-            $this->has_placeholders = true;
-        }
-        if ($this->output != '') return;
-        if ($view != '') $this->view = $view;
-
-        $this->process();
-
-        //callable
-        if ($this->form_callable && $this->process_status == "success") {
-            $callable = $this->form_callable;
-            $result = $callable($this);
-            if ($result && is_a($result, 'Illuminate\Http\RedirectResponse')) {
-                $this->redirect = $result;
-            } elseif ($result && is_a($result, 'Illuminate\View\View')) {
-                $this->custom_output = $result;
-            }
-            
-            //reprocess if an error is added in closure
-            if ($this->process_status == 'error') {
-                $this->process();
-            }
-        }
-        //cleanup submits if success
-        if ($this->process_status == 'success') {
-            $this->removeType('submit');
-        }
-        $this->buildButtons();
-        $this->buildFields();
-        $dataform = $this->buildForm();
-        $this->output = $dataform->render();
-
-        $sections = $dataform->renderSections();
-        $this->header = $sections['df.header'];
-        $this->footer = $sections['df.footer'];
-        $this->body = @$sections['df.fields'];
-        Rapyd::setForm($this);
+        $this->validator_messages = $messages;
     }
 
     /**
-     * @param  string $view
-     * @return string
+     * append error (to be used in passed/saved closure)
+     * @param string $url
+     * @param string $name
+     * @param string $position
+     * @param array $attributes
+     *
+     * @return $this
      */
-    public function getForm($view = '')
+    public function error($error)
     {
-        $this->build($view);
+        $this->process_status = 'error';
+        $this->message = '';
+        $this->error .= $error;
 
-        return $this->output;
+        return $this;
+    }
+
+    /**
+     * @param string $process_status
+     *
+     * @return bool
+     */
+    public function on($process_status = "false")
+    {
+        if (is_array($process_status))
+            return (bool)in_array($this->process_status, $process_status);
+        return ($this->process_status == $process_status);
     }
 
     public function __toString()
@@ -551,9 +503,9 @@ class DataForm extends Widget
             //http://stackoverflow.com/questions/2429642/why-its-impossible-to-throw-exception-from-tostring/27307132#27307132
             try {
                 $this->getForm();
-            }
-            catch (\Exception $e) {
-                $previousHandler = set_exception_handler(function (){ });
+            } catch (Exception $e) {
+                $previousHandler = set_exception_handler(function () {
+                });
                 restore_error_handler();
                 call_user_func($previousHandler, $e);
                 die;
@@ -565,21 +517,16 @@ class DataForm extends Widget
     }
 
     /**
-     * @return bool
+     * @param string $view
+     * @return string
      */
-    public function hasRedirect()
+    public function getForm($view = '')
     {
-        return ($this->redirect != null) ? true : false;
+        $this->build($view);
+
+        return $this->output;
     }
 
-    /**
-     * @return bool
-     */
-    public function hasCustomOutput()
-    {
-        return ($this->custom_output != null) ? true : false;
-    }
-    
     /**
      * @return string
      */
@@ -590,7 +537,7 @@ class DataForm extends Widget
 
     /**
      * @param string $viewname
-     * @param array  $array    of values for view
+     * @param array $array of values for view
      *
      * @return View|Redirect
      */
@@ -610,21 +557,37 @@ class DataForm extends Widget
     }
 
     /**
-     * build form and check if process status is "success" then execute a callable
-     * @param callable $callable
+     * @return bool
      */
-    public function saved(\Closure $callable)
+    public function hasRedirect()
     {
-         $this->form_callable = $callable;
+        return ($this->redirect != null) ? true : false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasCustomOutput()
+    {
+        return ($this->custom_output != null) ? true : false;
     }
 
     /**
      * alias for saved
      * @param callable $callable
      */
-    public function passed(\Closure $callable)
+    public function passed(Closure $callable)
     {
         $this->saved($callable);
+    }
+
+    /**
+     * build form and check if process status is "success" then execute a callable
+     * @param callable $callable
+     */
+    public function saved(Closure $callable)
+    {
+        $this->form_callable = $callable;
     }
 
     /**
@@ -636,11 +599,11 @@ class DataForm extends Widget
      * @param bool $insert
      * @param bool $update
      */
-    public function set($field, $value = null , $insert = true, $update = true)
+    public function set($field, $value = null, $insert = true, $update = true)
     {
 
         if (is_array($field)) {
-            foreach ($field as $key=>$val) {
+            foreach ($field as $key => $val) {
                 $this->set($key, $val, $insert, $update);
             }
         }
@@ -654,18 +617,58 @@ class DataForm extends Widget
 
     }
 
+    /**
+     * @param string $name
+     * @param string $label
+     * @param string $type
+     * @param string $validation
+     *
+     * @return mixed
+     */
+    public function add($name, $label, $type, $validation = '')
+    {
+        if (strpos($type, "\\") !== false) {
+            $field_class = $type;
+        } else {
+            $field_class = '\Zofe\Rapyd\DataForm\Field\\' . ucfirst($type);
+        }
+
+        //instancing
+        if (isset($this->model)) {
+            $field_obj = new $field_class($name, $label, $this->model, $this->model_relations);
+        } else {
+            $field_obj = new $field_class($name, $label);
+        }
+
+        if (!$field_obj instanceof Field) {
+            throw new InvalidArgumentException('Third argument («type») must point to class inherited Field class');
+        }
+
+        if ($field_obj->type == "file") {
+            $this->multipart = true;
+        }
+
+        //default group
+        if (isset($this->default_group) && !isset($field_obj->group)) {
+            $field_obj->group = $this->default_group;
+        }
+        $this->fields[$name] = $field_obj;
+
+        return $field_obj;
+    }
+
     public function compact()
     {
         $this->has_labels = false;
         $this->has_placeholders = true;
         return $this;
     }
-    
+
     /**
      * Magic method to catch all appends
      *
-     * @param  string $name
-     * @param  Array  $arguments
+     * @param string $name
+     * @param Array $arguments
      * @return mixed
      */
     public function __call($name, $arguments)
@@ -675,12 +678,12 @@ class DataForm extends Widget
             $name = substr($name, 3);
         }
 
-        $classname = '\Zofe\Rapyd\DataForm\Field\\'.ucfirst($name);
+        $classname = '\Zofe\Rapyd\DataForm\Field\\' . ucfirst($name);
 
         if (class_exists($classname)) {
             array_push($arguments, $name);
 
-            return  call_user_func_array(array($this, "add"), $arguments);
+            return call_user_func_array(array($this, "add"), $arguments);
         }
     }
 }

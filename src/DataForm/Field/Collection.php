@@ -8,6 +8,6 @@ class Collection extends Container
 {
 
     public $type = "collection";
-    
+
 
 }

@@ -1,9 +1,11 @@
 <?php namespace Zofe\Rapyd\Demo;
 
+use Eloquent;
+
 /**
  * Author
  */
-class Author extends \Eloquent
+class Author extends Eloquent
 {
 
     protected $table = 'demo_users';
@@ -22,7 +24,7 @@ class Author extends \Eloquent
 
     public function getFullnameAttribute($value)
     {
-        return $this->firstname ." ". $this->lastname;
+        return $this->firstname . " " . $this->lastname;
     }
 
 }

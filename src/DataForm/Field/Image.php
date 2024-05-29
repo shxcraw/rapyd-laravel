@@ -2,9 +2,11 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
+use Closure;
+use Event;
 use Illuminate\Support\Facades\Input;
 use Intervention\Image\ImageManagerStatic as ImageManager;
+use Request;
 
 class Image extends File
 {
@@ -21,62 +23,9 @@ class Image extends File
     {
         parent::__construct($name, $label, $model, $model_relations);
 
-        \Event::listen('rapyd.uploaded.'.$this->name, function () {
+        Event::listen('rapyd.uploaded.' . $this->name, function () {
             $this->imageProcess();
         });
-    }
-
-    /**
-     * store a closure to make something with ImageManager post process
-     * @param  callable $callable
-     * @return $this
-     */
-    public function image(\Closure $callable)
-    {
-        $this->image_callable = $callable;
-
-        return $this;
-    }
-
-    /**
-     * shortcut to ImageManager resize
-     * @param $width
-     * @param $height
-     * @param $filename
-     * @return $this
-     */
-    public function resize($width, $height, $filename = null)
-    {
-        $this->resize[] = array('width'=>$width, 'height'=>$height,  'filename'=>$filename);
-
-        return $this;
-    }
-
-    /**
-     * shortcut to ImageManager fit
-     * @param $width
-     * @param $height
-     * @param $filename
-     * @return $this
-     */
-    public function fit($width, $height, $filename = null)
-    {
-        $this->fit[] = array('width'=>$width, 'height'=>$height,  'filename'=>$filename);
-
-        return $this;
-    }
-
-    /**
-     * change the preview thumb size
-     * @param $width
-     * @param $height
-     * @return $this
-     */
-    public function preview($width, $height)
-    {
-        $this->preview = array($width, $height);
-
-        return $this;
     }
 
     /**
@@ -85,7 +34,7 @@ class Image extends File
     protected function imageProcess()
     {
         if ($this->saved) {
-            if (!$this->image)  $this->image = ImageManager::make($this->saved);
+            if (!$this->image) $this->image = ImageManager::make($this->saved);
 
             if ($this->image_callable) {
                 $callable = $this->image_callable;
@@ -109,10 +58,57 @@ class Image extends File
         }
     }
 
-    public function thumb()
+    /**
+     * shortcut to ImageManager resize
+     * @param $width
+     * @param $height
+     * @param $filename
+     * @return $this
+     */
+    public function resize($width, $height, $filename = null)
     {
-        if (!\File::exists($this->path.$this->old_value)) return '';
-        return '<img src="'.ImageManager::make($this->path.$this->old_value)->fit($this->preview[0], $this->preview[1])->encode('data-url').'" class="pull-left" style="margin:0 10px 10px 0">';
+        $this->resize[] = array('width' => $width, 'height' => $height, 'filename' => $filename);
+
+        return $this;
+    }
+
+    /**
+     * shortcut to ImageManager fit
+     * @param $width
+     * @param $height
+     * @param $filename
+     * @return $this
+     */
+    public function fit($width, $height, $filename = null)
+    {
+        $this->fit[] = array('width' => $width, 'height' => $height, 'filename' => $filename);
+
+        return $this;
+    }
+
+    /**
+     * store a closure to make something with ImageManager post process
+     * @param callable $callable
+     * @return $this
+     */
+    public function image(Closure $callable)
+    {
+        $this->image_callable = $callable;
+
+        return $this;
+    }
+
+    /**
+     * change the preview thumb size
+     * @param $width
+     * @param $height
+     * @return $this
+     */
+    public function preview($width, $height)
+    {
+        $this->preview = array($width, $height);
+
+        return $this;
     }
 
     public function build()
@@ -130,7 +126,7 @@ class Image extends File
                 } elseif ((!isset($this->value))) {
                     $output = $this->layout['null_label'];
                 } else {
-                    $output =  $this->thumb();
+                    $output = $this->thumb();
                 }
                 $output = "<div class='help-block'>" . $output . "&nbsp;</div>";
                 break;
@@ -139,20 +135,26 @@ class Image extends File
             case "modify":
                 if ($this->old_value != "") {
                     $output .= '<div class="clearfix">';
-                    $output .= $this->thumb()." &nbsp;".link_to($this->web_path.$this->value, $this->value, array('target'=>'_blank'))."<br />\n";
-                    $output .= Form::checkbox($this->name.'_remove', 1, (bool) \Request::get($this->name.'_remove'))." ".trans('rapyd::rapyd.delete')." <br/>\n";
+                    $output .= $this->thumb() . " &nbsp;" . link_to($this->web_path . $this->value, $this->value, array('target' => '_blank')) . "<br />\n";
+                    $output .= html()->checkbox($this->name . '_remove', (bool)Request::get($this->name . '_remove'), 1) . " " . trans('rapyd::rapyd.delete') . " <br/>\n";
                     $output .= '</div>';
                 }
-                $output .= Form::file($this->name, $this->attributes);
+                $output .= html()->file($this->name)->attributes($this->attributes);
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
-            default:;
+            default:
         }
         $this->output = "\n" . $output . "\n" . $this->extra_output . "\n";
+    }
+
+    public function thumb()
+    {
+        if (!\File::exists($this->path . $this->old_value)) return '';
+        return '<img src="' . ImageManager::make($this->path . $this->old_value)->fit($this->preview[0], $this->preview[1])->encode('data-url') . '" class="pull-left" style="margin:0 10px 10px 0">';
     }
 
 }

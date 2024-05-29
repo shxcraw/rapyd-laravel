@@ -1,7 +1,8 @@
-<?php namespace Zofe\Rapyd;
+<?php
 
-use Collective\Html\FormBuilder;
-use Collective\Html\HtmlBuilder;
+namespace Zofe\Rapyd;
+
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
 
 class RapydServiceProvider extends ServiceProvider
@@ -13,30 +14,27 @@ class RapydServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadViewsFrom(__DIR__.'/../views', 'rapyd');
-        $this->loadTranslationsFrom(__DIR__.'/../lang', 'rapyd');
-        
+        $this->loadViewsFrom(__DIR__ . '/../views', 'rapyd');
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'rapyd');
+
         //assets
-        $this->publishes([__DIR__.'/../public/assets' => public_path('packages/zofe/rapyd/assets')], 'assets');
-        
+        $this->publishes([__DIR__ . '/../public/assets' => public_path('packages/zofe/rapyd/assets')], 'assets');
+
         //config
-        $this->publishes([__DIR__.'/../config/rapyd.php' => config_path('rapyd.php')], 'config');
-        $this->mergeConfigFrom( __DIR__.'/../config/rapyd.php', 'rapyd');
+        $this->publishes([__DIR__ . '/../config/rapyd.php' => config_path('rapyd.php')], 'config');
+        $this->mergeConfigFrom(__DIR__ . '/../config/rapyd.php', 'rapyd');
 
 
         $this->publishes([
-            __DIR__.'/routes.php' => base_path().'/routes/rapyd.php',
+            __DIR__ . '/routes.php' => base_path() . '/routes/rapyd.php',
         ], 'routes');
 
 
-        if (file_exists(base_path().'/routes/rapyd.php'))
-        {
-            $this->loadRoutesFrom(base_path().'/routes/rapyd.php');
+        if (file_exists(base_path() . '/routes/rapyd.php')) {
+            $this->loadRoutesFrom(base_path() . '/routes/rapyd.php');
         } else {
-            $this->loadRoutesFrom(__DIR__.'/routes.php');
+            $this->loadRoutesFrom(__DIR__ . '/routes.php');
         }
-       
-        include __DIR__ . '/macro.php';
     }
 
     /**
@@ -46,26 +44,26 @@ class RapydServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->register('Collective\Html\HtmlServiceProvider');
+        $this->app->register('Spatie\Html\HtmlServiceProvider');
         $this->app->register('Zofe\Burp\BurpServiceProvider');
-        
+
         Rapyd::setContainer($this->app);
-   
+
         $this->app->booting(function () {
-            $loader  =  \Illuminate\Foundation\AliasLoader::getInstance();
+            $loader = AliasLoader::getInstance();
 
             $loader->alias('Input', 'Illuminate\Support\Facades\Input');
-            
-            $loader->alias('Rapyd'     , 'Zofe\Rapyd\Facades\Rapyd'     );
-            
+
+            $loader->alias('Rapyd', 'Zofe\Rapyd\Facades\Rapyd');
+
             //deprecated .. and more facade are really needed ?
-            $loader->alias('DataSet'   , 'Zofe\Rapyd\Facades\DataSet'   );
-            $loader->alias('DataGrid'  , 'Zofe\Rapyd\Facades\DataGrid'  );
-            $loader->alias('DataForm'  , 'Zofe\Rapyd\Facades\DataForm'  );
-            $loader->alias('DataEdit'  , 'Zofe\Rapyd\Facades\DataEdit'  );
+            $loader->alias('DataSet', 'Zofe\Rapyd\Facades\DataSet');
+            $loader->alias('DataGrid', 'Zofe\Rapyd\Facades\DataGrid');
+            $loader->alias('DataForm', 'Zofe\Rapyd\Facades\DataForm');
+            $loader->alias('DataEdit', 'Zofe\Rapyd\Facades\DataEdit');
             $loader->alias('DataFilter', 'Zofe\Rapyd\Facades\DataFilter');
-            $loader->alias('DataEmbed' , 'Zofe\Rapyd\Facades\DataEmbed');
-            $loader->alias('DataTree' , 'Zofe\Rapyd\Facades\DataTree');
+            $loader->alias('DataEmbed', 'Zofe\Rapyd\Facades\DataEmbed');
+            $loader->alias('DataTree', 'Zofe\Rapyd\Facades\DataTree');
             $loader->alias('Documenter', 'Zofe\Rapyd\Facades\Documenter');
 
 
@@ -81,5 +79,5 @@ class RapydServiceProvider extends ServiceProvider
     {
         return [];
     }
-    
+
 }

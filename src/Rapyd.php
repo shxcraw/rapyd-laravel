@@ -1,35 +1,24 @@
 <?php namespace Zofe\Rapyd;
 
 use Illuminate\Container\Container;
-use Collective\Html\HtmlFacade as HTML;
 use Illuminate\Support\Facades\Input;
+use Request;
 
 class Rapyd
 {
 
     protected static $container;
-    protected static $js         = array();
-    protected static $css        = array();
-    protected static $tag        = array();
-    protected static $scripts    = array();
-    protected static $styles     = array();
+    protected static $js = array();
+    protected static $css = array();
+    protected static $tag = array();
+    protected static $scripts = array();
+    protected static $styles = array();
     protected static $form;
-
-    /**
-     * Bind a Container to Rapyd
-     *
-     * @param Container $container
-     */
-    public static function setContainer(Container $container)
-    {
-
-        static::$container = $container;
-    }
 
     /**
      * Get the Container from Rapyd
      *
-     * @param  string    $service 
+     * @param string $service
      * @return Container
      */
     public static function getContainer($service = null)
@@ -43,29 +32,40 @@ class Rapyd
         return static::$container;
     }
 
+    /**
+     * Bind a Container to Rapyd
+     *
+     * @param Container $container
+     */
+    public static function setContainer(Container $container)
+    {
+
+        static::$container = $container;
+    }
+
     public static function head()
     {
         $buffer = "\n";
 
         //css links
         foreach (self::$css as $item) {
-            $buffer .= HTML::style($item);
+            $buffer .= sprintf("<style href='%s'></style>", $item);
         }
         //js links
         foreach (self::$js as $item) {
-            $buffer .= HTML::script($item);
+            $buffer .= sprintf("<script src='%s'></script>", $item);
         }
         //riot tags
         foreach (self::$tag as $item) {
-            $buffer .= HTML::script($item, ['type'=>'riot/tag']);
+            $buffer .= sprintf("<script src='%s' type='riot/tag'></script>", $item);
         }
-        
+
         //inline styles & scripts
         if (count(self::$styles)) {
-            $buffer .= sprintf("<style type=\"text/css\">\n%s\n</style>", implode("\n", self::$styles));
+            $buffer .= sprintf("<style>\n%s\n</style>", implode("\n", self::$styles));
         }
         if (count(self::$scripts)) {
-            $buffer .= sprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n\$(document).ready(function () {\n\n %s \n\n});\n</script>\n", implode("\n", self::$scripts));
+            $buffer .= sprintf("\n<script type=\"text/javascript\">\n\$(document).ready(function () {\n\n %s \n\n});\n</script>\n", implode("\n", self::$scripts));
         }
 
         return $buffer;
@@ -77,14 +77,14 @@ class Rapyd
 
         //js links
         foreach (self::$js as $item) {
-            $buffer .= HTML::script($item);
+            $buffer .= sprintf("<script src='%s'></script>", $item);
         }
-        
+
         //riot tags
         foreach (self::$tag as $item) {
-            $buffer .= HTML::script($item, ['type'=>'riot/tag']);
+            $buffer .= sprintf("<script src='%s' type='riot/tag'></script>", $item);
         }
-        
+
         //inline scripts
         if (count(self::$scripts)) {
             $buffer .= sprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n\$(document).ready(function () {\n\n %s \n\n});\n\n</script>\n", implode("\n", self::$scripts));
@@ -99,40 +99,40 @@ class Rapyd
 
         //css links
         foreach (self::$css as $item) {
-            $buffer .= HTML::style($item);
+            $buffer .= sprintf("<style href='%s'></style>", $item);
         }
 
         if ($demo) {
-            $buffer .= HTML::style('packages/zofe/rapyd/assets/demo/style.css'); 
+            $buffer .= sprintf("<style href='%s'></style>", 'packages/zofe/rapyd/assets/demo/style.css');
         }
         //inline styles
         if (count(self::$styles)) {
             $buffer .= sprintf("<style type=\"text/css\">\n%s\n</style>", implode("\n", self::$styles));
         }
 
-        $buffer .= HTML::style('packages/zofe/rapyd/assets/rapyd.css');
+        $buffer .= sprintf("<style href='%s'></style>", 'packages/zofe/rapyd/assets/rapyd.css');
 
         return $buffer;
     }
 
     public static function js($js)
     {
-        if (!in_array('packages/zofe/rapyd/assets/'.$js, self::$js))
-            self::$js[] = 'packages/zofe/rapyd/assets/'.$js;
+        if (!in_array('packages/zofe/rapyd/assets/' . $js, self::$js))
+            self::$js[] = 'packages/zofe/rapyd/assets/' . $js;
     }
 
     public static function css($css)
     {
-        if (!in_array('packages/zofe/rapyd/assets/'.$css, self::$css))
-            self::$css[] = 'packages/zofe/rapyd/assets/'.$css;
+        if (!in_array('packages/zofe/rapyd/assets/' . $css, self::$css))
+            self::$css[] = 'packages/zofe/rapyd/assets/' . $css;
     }
 
     public static function tag($tag)
     {
-        if (!in_array('packages/zofe/rapyd/assets/'.$tag, self::$tag))
-            self::$tag[] = 'packages/zofe/rapyd/assets/'.$tag;
+        if (!in_array('packages/zofe/rapyd/assets/' . $tag, self::$tag))
+            self::$tag[] = 'packages/zofe/rapyd/assets/' . $tag;
     }
-    
+
     public static function script($script)
     {
         self::$scripts[] = $script;
@@ -155,7 +155,7 @@ class Rapyd
 
     public static function qs($value, $default = false)
     {
-        if ($value == 'id' && !\Request::has('id')) {
+        if ($value == 'id' && !Request::has('id')) {
             $value = 'show|modify|delete|do_delete|update';
         }
         $url = new Url();
@@ -173,13 +173,13 @@ class Rapyd
         return $url;
     }
 
-    public static function setForm($form)
-    {
-        static::$form = $form;
-    }
-
     public static function getForm()
     {
         return static::$form;
+    }
+
+    public static function setForm($form)
+    {
+        static::$form = $form;
     }
 }

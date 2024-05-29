@@ -1,7 +1,7 @@
 <?php namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
 use Illuminate\Support\Facades\Input;
+use Request;
 
 class Checkbox extends Field
 {
@@ -18,10 +18,10 @@ class Checkbox extends Field
     public function getValue()
     {
         parent::getValue();
-        if (\Request::isMethod('post') && !\Request::exists($this->name)) {
-            $this->value =  $this->unchecked_value;
+        if (Request::isMethod('post') && !Request::exists($this->name)) {
+            $this->value = $this->unchecked_value;
         }
-        $this->checked = (bool) ($this->value == $this->checked_value);
+        $this->checked = (bool)($this->value == $this->checked_value);
     }
 
     public function getNewValue()
@@ -31,7 +31,7 @@ class Checkbox extends Field
         if (is_null($this->new_value)) {
             $this->new_value = $this->unchecked_value;
         }
-        $this->checked = (bool) ($this->value == $this->checked_value);
+        $this->checked = (bool)($this->value == $this->checked_value);
     }
 
     public function build()
@@ -48,18 +48,18 @@ class Checkbox extends Field
                 } else {
                     $output = ($this->checked) ? $this->checked_output : $this->unchecked_output;
                 }
-                $output = "<div class='help-block'>".$output."&nbsp;</div>";
+                $output = "<div class='help-block'>" . $output . "&nbsp;</div>";
                 break;
 
             case "create":
             case "modify":
                 //dd($this->checked);
-                $this->attributes = str_replace('form-control','',$this->attributes);
-                $output = Form::checkbox($this->name, $this->checked_value, $this->checked, $this->attributes) .' '. $this->extra_output;
+                $this->attributes = str_replace('form-control', '', $this->attributes);
+                $output = html()->checkbox($this->name, $this->checked, $this->checked_value)->attributes($this->attributes) . ' ' . $this->extra_output;
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

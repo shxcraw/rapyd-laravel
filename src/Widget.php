@@ -1,89 +1,61 @@
-<?php namespace Zofe\Rapyd;
+<?php
 
-use Collective\Html\FormFacade as Form;
-use Collective\Html\HtmlFacade as HTML;
+namespace Zofe\Rapyd;
+
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\Session;
 
 class Widget
 {
 
-    public $label             = "";
-    public $output            = "";
-    public $built             = false;
+    public static $identifier = 0;
+    public $label = "";
+    public $output = "";
+    public $built = false;
     public $url;
-    public $attributes        = array();
-
-    public $process_status    = "idle";
-    public $status            = "idle";
-    public $action            = "idle";
+    public $attributes = array();
+    public $process_status = "idle";
+    public $status = "idle";
 
     // TR: Top right - BL: Bottom left - BR: Bottom right
-    public $button_container  = array( "TR"=>array(), "BL"=>array(), "BR"=>array(), "BC"=>array() );
-    public $message           = "";
-    public $links             = array();
-
-    public static $identifier = 0;
+    public $action = "idle";
+    public $button_container = array("TR" => array(), "BL" => array(), "BR" => array(), "BC" => array());
+    public $message = "";
+    public $links = array();
 
     public function __construct()
     {
         $this->url = new Url();
-        $this->parser = new Parser(App::make('files'), App::make('path').'/storage/views');
-    }
-
-    /**
-     * identifier is empty or a numeric value, it "identify" a single object instance.
-     *
-     * @return string identifier
-     */
-    protected function getIdentifier()
-    {
-        if (static::$identifier < 1) {
-            static::$identifier++;
-
-            return "";
-        }
-
-        return (string) static::$identifier++;
+        $this->parser = new Parser(App::make('files'), App::make('path') . '/storage/views');
     }
 
     /**
      * @param string $name
      * @param string $position
-     * @param array  $attributes
+     * @param array $attributes
      *
      * @return $this
      */
-    public function button($name, $position="BL", $attributes=array())
+    public function button($name, $position = "BL", $attributes = array())
     {
-        $attributes = array_merge(array("class"=>"btn btn-default"), $attributes);
+        $attributes = array_merge(array("class" => "btn btn-default"), $attributes);
 
-        $this->button_container[$position][] = Form::button($name, $attributes);
+        $this->button_container[$position][] = html()->button(name: $name)->attributes($attributes);
 
         return $this;
     }
 
     /**
-     * @param string $url
-     * @param string $name
-     * @param string $position
-     * @param array  $attributes
-     *
+     * set attributes for widget
+     * @param $attributes
      * @return $this
      */
-    public function link($url, $name, $position="BL", $attributes=array())
+    public function attributes($attributes)
     {
-        $base = str_replace(Request::path(),'',strtok(Request::fullUrl(),'?'));
-        $match_url = str_replace($base, '/', strtok($url,'?'));
-        if (Request::path()!= $match_url) {
-            $url = Persistence::get($match_url, parse_url($url, PHP_URL_QUERY));
+        if (is_array($this->attributes) and is_array($attributes)) {
+            $attributes = array_merge($this->attributes, $attributes);
         }
-
-
-        $attributes = array_merge(array("class"=>"btn btn-default"), $attributes);
-        $this->button_container[$position][] =  HTML::link($url, $name, $attributes);
-        $this->links[] = $url;
+        $this->attributes = $attributes;
 
         return $this;
     }
@@ -91,27 +63,51 @@ class Widget
     /**
      * @param string $route
      * @param string $name
-     * @param array  $parameters
+     * @param array $parameters
      * @param string $position
-     * @param array  $attributes
+     * @param array $attributes
      *
      * @return $this
      */
-    public function linkRoute($route, $name, $parameters=array(), $position="BL", $attributes=array())
+    public function linkRoute($route, $name, $parameters = array(), $position = "BL", $attributes = array())
     {
         return $this->link(route($route, $parameters), $name, $position, $attributes);
     }
 
     /**
-     * @param string $action
+     * @param string $url
      * @param string $name
-     * @param array  $parameters
      * @param string $position
-     * @param array  $attributes
+     * @param array $attributes
      *
      * @return $this
      */
-    public function linkAction($action, $name, $parameters=array(), $position="BL", $attributes=array())
+    public function link($url, $name, $position = "BL", $attributes = array())
+    {
+        $base = str_replace(Request::path(), '', strtok(Request::fullUrl(), '?'));
+        $match_url = str_replace($base, '/', strtok($url, '?'));
+        if (Request::path() != $match_url) {
+            $url = Persistence::get($match_url, parse_url($url, PHP_URL_QUERY));
+        }
+
+
+        $attributes = array_merge(array("class" => "btn btn-default"), $attributes);
+        $this->button_container[$position][] = html()->a($url, $name)->attributes($attributes);
+        $this->links[] = $url;
+
+        return $this;
+    }
+
+    /**
+     * @param string $action
+     * @param string $name
+     * @param array $parameters
+     * @param string $position
+     * @param array $attributes
+     *
+     * @return $this
+     */
+    public function linkAction($action, $name, $parameters = array(), $position = "BL", $attributes = array())
     {
         return $this->link(action($action, $parameters), $name, $position, $attributes);
     }
@@ -131,13 +127,13 @@ class Widget
      * @param string $url
      * @param string $name
      * @param string $position
-     * @param array  $attributes
+     * @param array $attributes
      *
      * @return $this
      */
     public function message($message)
     {
-        $this->message =  $message;
+        $this->message = $message;
 
         return $this;
     }
@@ -155,21 +151,6 @@ class Widget
         }
 
         return $this->output;
-    }
-
-    /**
-     * set attributes for widget
-     * @param $attributes
-     * @return $this
-     */
-    public function attributes($attributes)
-    {
-        if (is_array($this->attributes) and is_array($attributes)) {
-            $attributes = array_merge($this->attributes, $attributes);
-        }
-        $this->attributes = $attributes;
-
-        return $this;
     }
 
     /**
@@ -192,12 +173,12 @@ class Widget
         if (is_string($this->attributes))
             return $this->attributes;
 
-        if (count($this->attributes)<1)
+        if (count($this->attributes) < 1)
             return "";
 
         $compiled = '';
         foreach ($this->attributes as $key => $val) {
-            $compiled .= ' '.$key.'="'.$val.'"';
+            $compiled .= ' ' . $key . '="' . $val . '"';
         }
 
         return $compiled;
@@ -208,16 +189,35 @@ class Widget
      * @param $url
      * @param $method
      * @param $name
-     * @param  string $position
-     * @param  array  $attributes
+     * @param string $position
+     * @param array $attributes
      * @return $this
      */
-    public function formButton($url, $method, $name, $position="BL", $attributes=array())
+    public function formButton($url, $method, $name, $position = "BL", $attributes = array())
     {
-        $attributes = array_merge(array("class"=>"btn btn-default"), $attributes);
-        $this->button_container[$position][] = Form::open(array('url' => $url, 'method' => $method)).Form::submit($name, $attributes).Form::close();
+        $attributes = array_merge(array("class" => "btn btn-default"), $attributes);
+        $this->button_container[$position][] =
+            html()->form(['url' => $url, 'method' => $method])->open() .
+            html()->submit($name)->attributes($attributes)->name($name) .
+            html()->form()->close();
 
         return $this;
+    }
+
+    /**
+     * identifier is empty or a numeric value, it "identify" a single object instance.
+     *
+     * @return string identifier
+     */
+    protected function getIdentifier()
+    {
+        if (static::$identifier < 1) {
+            static::$identifier++;
+
+            return "";
+        }
+
+        return (string)static::$identifier++;
     }
 
 }

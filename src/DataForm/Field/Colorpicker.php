@@ -2,7 +2,6 @@
 
 namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
 use Zofe\Rapyd\Rapyd;
 
 class Colorpicker extends Field
@@ -20,24 +19,24 @@ class Colorpicker extends Field
 
             case "show":
                 $output = $this->value;
-                $output = "<div class='help-block' style='background-color:".$output."'>&nbsp;</div>";
+                $output = "<div class='help-block' style='background-color:" . $output . "'>&nbsp;</div>";
                 break;
 
             case "create":
             case "modify":
                 Rapyd::css('colorpicker/css/bootstrap-colorpicker.min.css');
                 Rapyd::js('colorpicker/js/bootstrap-colorpicker.min.js');
-                $output  = Form::text($this->name, $this->value,  $this->attributes);
+                $output = html()->text($this->name, $this->value)->attributes($this->attributes);
                 $output .= Rapyd::script("
-                        $('#".$this->name."').colorpicker({
+                        $('#" . $this->name . "').colorpicker({
                             format: 'hex'
                         });");
 
                 break;
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
-            default:;
+            default:
         }
         $this->output = $output;
     }

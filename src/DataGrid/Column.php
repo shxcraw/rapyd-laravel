@@ -1,5 +1,7 @@
 <?php namespace Zofe\Rapyd\DataGrid;
 
+use Closure;
+use Exception;
 use Zofe\Rapyd\Helpers\HTML;
 
 class Column
@@ -23,7 +25,7 @@ class Column
     {
 
         if (!$name) {
-            throw new \Exception('$name must be given when creating Column object.');
+            throw new Exception('$name must be given when creating Column object.');
         }
 
         $this->name = $name;
@@ -32,11 +34,23 @@ class Column
         $filter = strstr($name, '|');
         if ($filter) {
             $this->name = strstr($name, '|', true);
-            $this->filter(trim($filter,'|'));
+            $this->filter(trim($filter, '|'));
         }
 
         $this->label($label);
         $this->orderby($orderby);
+    }
+
+    public function filter($filters)
+    {
+        if (is_string($filters)) {
+            $filters = explode('|', trim($filters));
+        }
+        if (is_array($filters)) {
+            $this->filters = $filters;
+        }
+
+        return $this;
     }
 
     protected function label($label)
@@ -46,7 +60,7 @@ class Column
 
     protected function orderby($orderby)
     {
-        $this->orderby = (bool) $orderby;
+        $this->orderby = (bool)$orderby;
         if ($this->orderby) {
             $this->orderby_field = (is_string($orderby)) ? $orderby : $this->name;
         }
@@ -90,19 +104,7 @@ class Column
         return $this;
     }
 
-    public function filter($filters)
-    {
-        if (is_string($filters)) {
-            $filters = explode('|', trim($filters));
-        }
-        if (is_array($filters)) {
-            $this->filters = $filters;
-        }
-
-        return $this;
-    }
-
-    public function cell(\Closure $callable)
+    public function cell(Closure $callable)
     {
         $this->cell_callable = $callable;
 

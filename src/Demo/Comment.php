@@ -1,9 +1,11 @@
 <?php namespace Zofe\Rapyd\Demo;
 
+use Eloquent;
+
 /**
  * Comment
  */
-class Comment extends \Eloquent
+class Comment extends Eloquent
 {
 
     protected $table = 'demo_comments';

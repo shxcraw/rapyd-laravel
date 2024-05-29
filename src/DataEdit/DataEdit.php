@@ -2,27 +2,64 @@
 
 namespace Zofe\Rapyd\DataEdit;
 
-use Zofe\Rapyd\DataForm\DataForm;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Request;
+use Zofe\Rapyd\DataForm\DataForm;
 use Zofe\Rapyd\Persistence;
 
 class DataEdit extends DataForm
 {
 
     //flow
-    protected $postprocess_url = "";
-    protected $undo_url = "";
     public $back_url = "";
     public $back_on = array();
     public $buttons = array();
+    protected $postprocess_url = "";
+    protected $undo_url = "";
 
     public function __construct()
     {
         parent::__construct();
         $this->process_url = '';
+    }
+
+    /**
+     * enable auto-back feature on given actions
+     * @param string $actions
+     * @param string $uri
+     * @return $this
+     */
+    public function back($actions = 'insert|update|do_delete', $url = "")
+    {
+
+        if ($url == "") {
+            if (count($this->links)) {
+                $url = array_pop($this->links);
+            } else {
+                return $this;
+            }
+        } else {
+            $base = str_replace(Request::path(), '', strtok(Request::fullUrl(), '?'));
+            $match_url = str_replace($base, '/', strtok($url, '?'));
+            if (Request::path() != $match_url) {
+                $url = Persistence::get($match_url);
+            }
+        }
+
+        $this->back_on = explode("|", $actions);
+        $this->back_url = $url;
+
+        return $this;
+    }
+
+    /**
+     * just an alias for getForm()
+     * @param string $view
+     * @return string the form output
+     */
+    public function getEdit($view = '')
+    {
+        return $this->getForm($view);
     }
 
     /**
@@ -40,11 +77,11 @@ class DataEdit extends DataForm
                 $this->status = "unknow_record";
             }
             ///// modify /////
-        } elseif ($this->url->value('modify' . $this->cid.'|update' . $this->cid)) {
+        } elseif ($this->url->value('modify' . $this->cid . '|update' . $this->cid)) {
             $this->status = "modify";
             $this->method = "patch";
             $this->process_url = $this->url->replace('modify' . $this->cid, 'update' . $this->cid)->get();
-            if (!$this->find($this->url->value('modify' . $this->cid.'|update'. $this->cid))) {
+            if (!$this->find($this->url->value('modify' . $this->cid . '|update' . $this->cid))) {
                 $this->status = "unknow_record";
             }
             ///// create /////
@@ -95,10 +132,10 @@ class DataEdit extends DataForm
     {
 
         ///// insert /////
-        if (Request::isMethod('post') && $this->url->value('insert' . $this->cid)) {
+        if (Request::method() == 'post' && $this->url->value('insert' . $this->cid)) {
             $this->action = "insert";
             ///// update /////
-        } elseif (Request::isMethod('patch') && $this->url->value('update' . $this->cid)) {
+        } elseif (Request::method() == 'patch' && $this->url->value('update' . $this->cid)) {
             $this->action = "update";
             $this->process_url = $this->url->append('update', $this->url->value('update' . $this->cid))->get();
             if (!$this->find($this->url->value('update' . $this->cid))) {
@@ -130,7 +167,7 @@ class DataEdit extends DataForm
                 }
                 if ($this->on("success")) {
                     $this->status = "modify";
-                    if (in_array('update',$this->back_on)) {
+                    if (in_array('update', $this->back_on)) {
                         $this->redirect = $this->back_url;
                     } else {
                         $this->redirect = $this->url->replace('update' . $this->cid, 'show' . $this->cid)->get();
@@ -146,7 +183,7 @@ class DataEdit extends DataForm
                 }
                 if ($this->on("success")) {
                     $this->status = "show";
-                    if (in_array('insert',$this->back_on)) {
+                    if (in_array('insert', $this->back_on)) {
                         $this->redirect = $this->back_url;
                     } else {
                         $this->redirect = $this->url->remove('insert' . $this->cid)->append('show' . $this->cid, $this->model->getKey())->get();
@@ -159,7 +196,7 @@ class DataEdit extends DataForm
                     $this->message(trans('rapyd::rapyd.err'));
                 }
                 if ($this->on("success")) {
-                    if (in_array('do_delete',$this->back_on)) {
+                    if (in_array('do_delete', $this->back_on)) {
                         $this->redirect = $this->back_url;
                     } else {
                         $this->message(trans('rapyd::rapyd.deleted'));
@@ -177,35 +214,6 @@ class DataEdit extends DataForm
                 $this->message(trans('rapyd::rapyd.err_unknown'));
                 break;
         }
-    }
-
-    /**
-     * enable auto-back feature on given actions
-     * @param  string $actions
-     * @param  string $uri
-     * @return $this
-     */
-    public function back($actions='insert|update|do_delete', $url="")
-    {
-
-        if ($url == "") {
-            if (count($this->links)) {
-                $url = array_pop($this->links);
-            } else {
-                return $this;
-            }
-        } else {
-            $base = str_replace(Request::path(),'',strtok(Request::fullUrl(),'?'));
-            $match_url = str_replace($base, '/', strtok($url,'?'));
-            if (Request::path()!= $match_url) {
-                $url = Persistence::get($match_url);
-            }
-        }
-
-        $this->back_on = explode("|", $actions);
-        $this->back_url = $url;
-
-        return $this;
     }
 
     /**
@@ -230,7 +238,7 @@ class DataEdit extends DataForm
 
         //modify
         if ($this->status == "modify") {
-            if (in_array('update',$this->back_on)) {
+            if (in_array('update', $this->back_on)) {
                 $this->link($this->back_url, trans('rapyd::rapyd.undo'), $undoButtonPosition);
             } else {
                 $this->link($this->url->replace('modify' . $this->cid, 'show' . $this->cid)->replace('update' . $this->cid, 'show' . $this->cid)->get(), trans('rapyd::rapyd.undo'), $modifyButtonPosition);
@@ -239,12 +247,12 @@ class DataEdit extends DataForm
             $this->submit(trans('rapyd::rapyd.save'), $saveButtonPosition);
         }
         //crete
-        if ($this->status == "create" && $this->action!= 'delete') {
+        if ($this->status == "create" && $this->action != 'delete') {
             $this->submit(trans('rapyd::rapyd.save'), $saveButtonPosition);
         }
         //delete
         if ($this->status == "delete") {
-            if (in_array('do_delete',$this->back_on)) {
+            if (in_array('do_delete', $this->back_on)) {
                 $this->link($this->back_url, trans('rapyd::rapyd.undo'), $undoButtonPosition);
             } else {
                 $this->link($this->url->replace('delete' . $this->cid, 'show' . $this->cid)->replace('do_delete' . $this->cid, 'show' . $this->cid)->get(), trans('rapyd::rapyd.undo'), $deleteButtonPosition);
@@ -253,16 +261,6 @@ class DataEdit extends DataForm
             $do_delete_url = $this->url->replace('delete' . $this->cid, 'do_delete' . $this->cid)->get();
             $this->formButton($do_delete_url, 'delete', trans('rapyd::rapyd.delete'), $deleteButtonPosition);
         }
-    }
-
-    /**
-     * just an alias for getForm()
-     * @param  string $view
-     * @return string the form output
-     */
-    public function getEdit($view = '')
-    {
-        return $this->getForm($view);
     }
 
 }

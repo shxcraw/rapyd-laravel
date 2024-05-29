@@ -1,7 +1,5 @@
 <?php namespace Zofe\Rapyd\DataForm\Field;
 
-use Collective\Html\FormFacade as Form;
-
 class Multiselect extends Field
 {
     public $type = "checks";
@@ -63,12 +61,12 @@ class Multiselect extends Field
                 $this->attributes['multiple'] = 'multiple';
                 $this->attributes['data-placeholder'] = $this->attributes['placeholder'];
                 $this->attributes['placeholder'] = null;
-                $output .= Form::select($this->name . '[]', $this->options, $this->values, $this->attributes);
+                $output .= html()->select($this->name . '[]', $this->options, $this->values)->attributes($this->attributes);
                 $output .= $this->extra_output;
                 break;
 
             case "hidden":
-                $output = Form::hidden($this->name, $this->value);
+                $output = html()->hidden($this->name, $this->value);
                 break;
 
             default:

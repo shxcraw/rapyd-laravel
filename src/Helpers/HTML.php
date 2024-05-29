@@ -18,7 +18,7 @@ class HTML
 
     public static function chars($value, $double_encode = true)
     {
-        return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8", $double_encode);
+        return htmlspecialchars((string)$value, ENT_QUOTES, "UTF-8", $double_encode);
     }
 
     public static function xssfilter($string)
