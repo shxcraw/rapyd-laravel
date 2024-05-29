@@ -282,7 +282,7 @@ class File extends Field
 
                 if ($this->old_value) {
                     $output .= '<div class="clearfix">';
-                    $output .= link_to($this->web_path . $this->value, $this->value) . "&nbsp;";
+                    $output .= url($this->web_path . $this->value, $this->value) . "&nbsp;";
                     $output .= html()->checkbox($this->name . '_remove', (bool)Request::get($this->name . '_remove'), 1) . " " . trans('rapyd::rapyd.delete') . " <br/>\n";
                     $output .= '</div>';
                 }
