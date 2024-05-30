@@ -132,10 +132,10 @@ class DataEdit extends DataForm
     {
 
         ///// insert /////
-        if (Request::method() == 'post' && $this->url->value('insert' . $this->cid)) {
+        if (Request::isMethod('post') && $this->url->value('insert' . $this->cid)) {
             $this->action = "insert";
             ///// update /////
-        } elseif (Request::method() == 'patch' && $this->url->value('update' . $this->cid)) {
+        } elseif (Request::isMethod('patch') && $this->url->value('update' . $this->cid)) {
             $this->action = "update";
             $this->process_url = $this->url->append('update', $this->url->value('update' . $this->cid))->get();
             if (!$this->find($this->url->value('update' . $this->cid))) {

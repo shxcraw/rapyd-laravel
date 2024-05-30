@@ -443,7 +443,7 @@ class DataForm extends Widget
             $this->close = '</div>';
         } else {
 
-            $this->open = html()->form()->attributes($form_attr)->open();
+            $this->open = html()->form($form_attr['method'], $form_attr['url'])->attributes($form_attr)->open();
             $this->close = html()->hidden('save', 1) . html()->form()->close();
 
             if ($this->method == "GET") {

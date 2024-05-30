@@ -197,7 +197,7 @@ class Widget
     {
         $attributes = array_merge(array("class" => "btn btn-default"), $attributes);
         $this->button_container[$position][] =
-            html()->form(['url' => $url, 'method' => $method])->open() .
+            html()->form($method, $url)->open() .
             html()->submit($name)->attributes($attributes)->name($name) .
             html()->form()->close();
 
