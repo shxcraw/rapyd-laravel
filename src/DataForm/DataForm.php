@@ -427,29 +427,32 @@ class DataForm extends Widget
 
     public function prepareForm()
     {
-        $form_attr = array('url' => $this->process_url, 'class' => "form-horizontal", 'role' => "form", 'method' => $this->method);
+        $form_attr = ['class' => "form-horizontal", 'role' => "form"];
         $form_attr = array_merge($form_attr, $this->attributes);
 
-        // See if we need a multipart form
-        foreach ($this->fields as $field_obj) {
-            if (in_array($field_obj->type, array('file', 'image'))) {
-                $form_attr['files'] = 'true';
-                break;
-            }
-        }
         // Set the form open and close
         if ($this->status == 'show') {
             $this->open = '<div class="' . (isset($form_attr['class']) ? $form_attr['class'] : 'form') . '">';
             $this->close = '</div>';
         } else {
+            $form = html()
+                ->form($this->method, $this->process_url)
+                ->attributes($form_attr)
+                ->addChild(
+                    html()->hidden($this->method == "GET" ? 'search' : 'save', 1),
+                );
 
-            $this->open = html()->form($form_attr['method'], $form_attr['url'])->attributes($form_attr)->open();
-            $this->close = html()->hidden('save', 1) . html()->form()->close();
-
-            if ($this->method == "GET") {
-                $this->close = html()->hidden('search', 1) . html()->form()->close();
+            foreach ($this->fields as $field_obj) {
+                if (in_array($field_obj->type, ['file', 'image'])) {
+                    $form = $form->acceptsFiles();
+                    break;
+                }
             }
+
+            $this->open = $form->open();
+            $this->close = $form->close();
         }
+
         if (isset($this->validator)) {
             $this->errors = $this->validator->messages();
             $this->error .= implode('<br />', $this->errors->all());
