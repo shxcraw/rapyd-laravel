@@ -383,7 +383,7 @@ abstract class Field extends Widget
     {
         $name = $this->db_name;
 
-        $process = (Request::get('search') || Request::get('save')) ? true : false;
+        $process = (Request::input('search') || Request::input('save')) ? true : false;
 
         //fix, don't refill on file fields
         if (in_array($this->type, array('file', 'image'))) {
@@ -394,8 +394,8 @@ abstract class Field extends Widget
             if ($this->multiple) {
 
                 $this->value = "";
-                if (Request::get($this->name)) {
-                    $values = Request::get($this->name);
+                if (Request::input($this->name)) {
+                    $values = Request::input($this->name);
                     if (!is_array($values)) {
                         $this->value = $values;
                     } else {
@@ -405,9 +405,9 @@ abstract class Field extends Widget
 
             } else {
                 if ($this->with_xss_filter) {
-                    $this->value = HTML::xssfilter(Request::get($this->name));
+                    $this->value = HTML::xssfilter(Request::input($this->name));
                 } else {
-                    $this->value = Request::get($this->name);
+                    $this->value = Request::input($this->name);
                 }
             }
             $this->is_refill = true;
@@ -466,7 +466,7 @@ abstract class Field extends Widget
                         . " but Rapyd can handle only BelongsToMany, BelongsTo, and HasOne");
                     break;
             }
-        } elseif ((isset($this->model)) && (Request::get($this->name) === null) && ($this->model->offsetExists($this->db_name))) {
+        } elseif ((isset($this->model)) && (Request::input($this->name) === null) && ($this->model->offsetExists($this->db_name))) {
 
             $this->value = $this->model->getAttribute($this->db_name);
         }
@@ -528,7 +528,7 @@ abstract class Field extends Widget
 
     public function getNewValue()
     {
-        $process = (Request::get('search') || Request::get('save')) ? true : false;
+        $process = (Request::input('search') || Request::input('save')) ? true : false;
 
         if ($process && Request::exists($this->name)) {
             if ($this->status == "create") {
@@ -539,8 +539,8 @@ abstract class Field extends Widget
 
             if ($this->multiple) {
                 $this->value = "";
-                if (Request::get($this->name)) {
-                    $values = Request::get($this->name);
+                if (Request::input($this->name)) {
+                    $values = Request::input($this->name);
                     if (!is_array($values)) {
                         $this->new_value = $values;
                     } else {
@@ -550,9 +550,9 @@ abstract class Field extends Widget
 
             } else {
                 if ($this->with_xss_filter) {
-                    $this->new_value = HTML::xssfilter(Request::get($this->name));
+                    $this->new_value = HTML::xssfilter(Request::input($this->name));
                 } else {
-                    $this->new_value = Request::get($this->name);
+                    $this->new_value = Request::input($this->name);
                 }
             }
         } elseif (($this->action == "insert") && ($this->insert_value != null)) {

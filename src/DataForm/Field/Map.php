@@ -49,11 +49,11 @@ class Map extends Field
 
     public function getValue()
     {
-        $process = (Request::get('search') || Request::get('save')) ? true : false;
+        $process = (Request::input('search') || Request::input('save')) ? true : false;
 
         if ($this->request_refill == true && $process && Request::exists($this->lat)) {
-            $this->value['lat'] = Request::get($this->lat);
-            $this->value['lon'] = Request::get($this->lon);
+            $this->value['lat'] = Request::input($this->lat);
+            $this->value['lon'] = Request::input($this->lon);
             $this->is_refill = true;
 
         } elseif (($this->status == "create") && ($this->insert_value != null)) {
@@ -69,10 +69,10 @@ class Map extends Field
 
     public function getNewValue()
     {
-        $process = (Request::get('search') || Request::get('save')) ? true : false;
+        $process = (Request::input('search') || Request::input('save')) ? true : false;
         if ($process && Request::exists($this->lat)) {
-            $this->new_value['lat'] = Request::get($this->lat);
-            $this->new_value['lon'] = Request::get($this->lon);
+            $this->new_value['lat'] = Request::input($this->lat);
+            $this->new_value['lon'] = Request::input($this->lon);
 
         } elseif (($this->action == "insert") && ($this->insert_value != null)) {
             $this->edited = true;

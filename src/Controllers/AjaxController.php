@@ -16,11 +16,11 @@ class AjaxController extends Controller
             $field = (array)$field;
 
             $f = array_shift($field);
-            $query = $entity::where($f, "like", Request::get("q") . "%");
+            $query = $entity::where($f, "like", Request::input("q") . "%");
 
             if (count($field)) {
                 foreach ($field as $f) {
-                    $query = $query->orWhere($f, "like", Request::get("q") . "%");
+                    $query = $query->orWhere($f, "like", Request::input("q") . "%");
                 }
 
             }

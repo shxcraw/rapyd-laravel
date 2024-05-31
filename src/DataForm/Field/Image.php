@@ -4,6 +4,7 @@ namespace Zofe\Rapyd\DataForm\Field;
 
 use Closure;
 use Event;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Input;
 use Intervention\Image\ImageManagerStatic as ImageManager;
 use Request;
@@ -135,11 +136,20 @@ class Image extends File
             case "modify":
                 if ($this->old_value != "") {
                     $output .= '<div class="clearfix">';
-                    $output .= $this->thumb() . " &nbsp;" . url($this->web_path . $this->value, $this->value, array('target' => '_blank')) . "<br />\n";
-                    $output .= html()->checkbox($this->name . '_remove', (bool)Request::get($this->name . '_remove'), 1) . " " . trans('rapyd::rapyd.delete') . " <br/>\n";
+                    $output .= $this->thumb() . "<br />\n";
+                    $output .= html()->checkbox($this->name . '_remove', (bool) Request::get($this->name . '_remove'), 1) . " " . trans('rapyd::rapyd.delete') . " <br/>\n";
                     $output .= '</div>';
                 }
-                $output .= html()->file($this->name)->attributes($this->attributes);
+
+                $file = html()->file($this->name)->attributes(
+                    Arr::except($this->attributes, ['type']),
+                );
+
+                if ($this->attributes['type'] === 'image') {
+                    $file = $file->acceptImage();
+                }
+
+                $output .= $file;
                 break;
 
             case "hidden":

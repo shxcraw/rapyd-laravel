@@ -4,6 +4,7 @@ namespace Zofe\Rapyd\DataForm\Field;
 
 use Closure;
 use Event;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Input;
 use Request;
 use Schema;
@@ -114,7 +115,7 @@ class File extends Field
             } else {
 
                 //unlink
-                if (Request::get($this->name . "_remove")) {
+                if (Request::input($this->name . "_remove")) {
                     $this->path = $this->parseString($this->path);
                     if ($this->unlink_file) {
                         @unlink(public_path() . '/' . $this->path . $this->old_value);
@@ -279,14 +280,22 @@ class File extends Field
 
             case "create":
             case "modify":
-
-                if ($this->old_value) {
+                if ($this->old_value != "") {
                     $output .= '<div class="clearfix">';
-                    $output .= url($this->web_path . $this->value, $this->value) . "&nbsp;";
-                    $output .= html()->checkbox($this->name . '_remove', (bool)Request::get($this->name . '_remove'), 1) . " " . trans('rapyd::rapyd.delete') . " <br/>\n";
+                    $output .= $this->thumb() . "<br />\n";
+                    $output .= html()->checkbox($this->name . '_remove', (bool) Request::get($this->name . '_remove'), 1) . " " . trans('rapyd::rapyd.delete') . " <br/>\n";
                     $output .= '</div>';
                 }
-                $output .= html()->file($this->name)->attributes($this->attributes);
+
+                $file = html()->file($this->name)->attributes(
+                    Arr::except($this->attributes, ['type']),
+                );
+
+                if ($this->attributes['type'] === 'image') {
+                    $file = $file->acceptImage();
+                }
+
+                $output .= $file;
                 break;
 
             case "hidden":

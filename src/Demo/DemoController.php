@@ -320,7 +320,7 @@ class DemoController extends Controller
 
     public function anyEdit()
     {
-        if (Request::get('do_delete') == 1) return "not the first";
+        if (Request::input('do_delete') == 1) return "not the first";
 
         $edit = DataEdit::source(new Article());
         $edit->label('Edit Article');
@@ -364,7 +364,7 @@ class DemoController extends Controller
 
     public function anyMenuedit()
     {
-        if (Request::get('do_delete') == 1) return "not the first";
+        if (Request::input('do_delete') == 1) return "not the first";
 
         $edit = DataEdit::source(new Menu());
         $edit->link("rapyd-demo/datatree", "Menu", "TR")->back();
@@ -386,7 +386,7 @@ class DemoController extends Controller
 
     public function anyNudeedit()
     {
-        if (Request::get('do_delete') == 1) return "not the first";
+        if (Request::input('do_delete') == 1) return "not the first";
 
         $edit = DataEdit::source(new Article());
         $edit->link("rapyd-demo/nudegrid", "Articles", "TR");
@@ -411,15 +411,15 @@ class DemoController extends Controller
     public function getAuthorlist()
     {
         //needed only if you want a custom remote ajax call for a custom search
-        return Author::where("firstname", "like", Request::get("q") . "%")
-            ->orWhere("lastname", "like", Request::get("q") . "%")->take(10)->get();
+        return Author::where("firstname", "like", Request::input("q") . "%")
+            ->orWhere("lastname", "like", Request::input("q") . "%")->take(10)->get();
 
     }
 
     public function getCategorylist()
     {
         //needed only if you want a custom remote ajax call for a custom search
-        return Category::where("name", "like", Request::get("q") . "%")->take(10)->get();
+        return Category::where("name", "like", Request::input("q") . "%")->take(10)->get();
 
     }
 
